@@ -25,6 +25,28 @@ Each request samples more candidates than asked for, drops the ones that fail
 the length, position, novelty and grammar checks (`src/lib/grammar.ts`), and
 returns the highest-scoring ones (`src/lib/generate.ts`).
 
+## Analysis
+
+- **Per sentence:** perplexity, Flesch reading ease, longest copied run and
+  share of rare words. Expanding a sentence shows the probability and
+  part-of-speech tag of every word, how each word was chosen and what the
+  alternatives were, and which source each stretch came from.
+- **Per run:** averages, vocabulary diversity, and a count of how many
+  candidates each filter rejected (`src/lib/generate.ts`).
+- **Per word:** frequency, neighbours, sources and distributionally similar
+  words (`src/lib/sentence-model.ts`).
+- **Both models:** choosing "Both" runs one request through each and compares
+  the numbers.
+
+Every run is saved to `data/runs/` with its ratings and listed on the History
+page; the 50 most recent are kept.
+
+## Tests
+
+```bash
+npm test
+```
+
 ## Data
 
 ```bash

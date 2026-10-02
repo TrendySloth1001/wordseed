@@ -43,3 +43,4 @@ next-env.d.ts
 # local corpus uploads and neural training intermediates
 /data/uploads/
 /data/neural/sentences.txt
+/data/runs/

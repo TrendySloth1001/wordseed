@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  Clock01Icon,
   Database01Icon,
   Moon02Icon,
   QuillWrite01Icon,
@@ -15,6 +16,7 @@ import { Button } from "@/components/ui/button";
 
 const LINKS = [
   { href: "/", label: "Generate", icon: SparklesIcon },
+  { href: "/runs", label: "History", icon: Clock01Icon },
   { href: "/corpus", label: "Corpus", icon: Database01Icon },
 ];
 
@@ -27,7 +29,7 @@ export function SiteHeader() {
       <div className="mx-auto flex h-14 w-full max-w-3xl items-center gap-2 px-4">
         <Link href="/" className="mr-auto flex min-w-0 items-center gap-2 font-semibold">
           <HugeiconsIcon icon={QuillWrite01Icon} strokeWidth={2} className="size-6 shrink-0" />
-          <span className="truncate">Word to sentences</span>
+          <span className="truncate max-[380px]:hidden">Word to sentences</span>
         </Link>
         <nav className="flex items-center gap-1">
           {LINKS.map((link) => (
@@ -35,7 +37,7 @@ export function SiteHeader() {
               key={link.href}
               asChild
               size="lg"
-              variant={pathname === link.href ? "default" : "ghost"}
+              variant={(link.href === "/" ? pathname === "/" : pathname.startsWith(link.href)) ? "default" : "ghost"}
             >
               <Link href={link.href} aria-label={link.label}>
                 <HugeiconsIcon icon={link.icon} strokeWidth={2} className="size-5" />

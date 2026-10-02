@@ -2,9 +2,16 @@
 
 export type Length = "any" | "short" | "medium" | "long";
 export type Position = "any" | "start" | "middle" | "end";
+export type Readability = "any" | "easy" | "hard";
 
-/** A generated sentence as tokens, with the engine's own probability score. */
-export type Candidate = { tokens: string[]; score: number };
+/**
+ * A generated sentence as tokens, with the engine's own probability score.
+ * `seed` is the index of the token generation started from. `orders` records,
+ * for the Markov engine, how each token was chosen: 0 for the seed and its two
+ * neighbours, 1 to 3 for the number of context words used, and 11 or 12 when
+ * a requested word was pulled in after one or two matching context words.
+ */
+export type Candidate = { tokens: string[]; score: number; seed: number; orders?: number[] };
 
 /** Allowed number of words (punctuation not counted) for each length setting. */
 export const LENGTHS: Record<Length, [min: number, max: number]> = {
@@ -71,12 +78,11 @@ export function tokenize(text: string): string[][] {
 }
 
 /**
- * Tokenises every text and normalises sentence-initial capitals: a capital at
- * the start of a sentence says nothing about the word itself, so it is only
- * kept when the word is never seen lowercased mid-sentence.
+ * Normalises sentence-initial capitals in place: a capital at the start of a
+ * sentence says nothing about the word itself, so it is only kept when the
+ * word is never seen lowercased mid-sentence.
  */
-export function prepareSentences(texts: string[]): string[][] {
-  const sentences = texts.flatMap(tokenize);
+export function normalizeCapitals(sentences: string[][]): void {
   const midSentence = new Set<string>();
   for (const sentence of sentences) {
     for (let i = 1; i < sentence.length; i++) midSentence.add(sentence[i]);
@@ -88,6 +94,12 @@ export function prepareSentences(texts: string[]): string[][] {
       if (midSentence.has(lower) || !midSentence.has(first)) sentence[0] = lower;
     }
   }
+}
+
+/** Tokenises every text into one list of sentences with capitals normalised. */
+export function prepareSentences(texts: string[]): string[][] {
+  const sentences = texts.flatMap(tokenize);
+  normalizeCapitals(sentences);
   return sentences;
 }
 

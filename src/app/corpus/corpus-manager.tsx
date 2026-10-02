@@ -9,6 +9,7 @@ import {
   Delete02Icon,
   File01Icon,
   Loading03Icon,
+  ChartHistogramIcon,
   ParagraphIcon,
   TextFontIcon,
   TextIcon,
@@ -19,10 +20,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BarList, Histogram } from "@/components/bars";
+import { Section } from "@/components/word-profile";
+import type { CorpusStatistics } from "@/lib/sentence-model";
 
 type Summary = {
   sources: { name: string; bytes: number; uploaded: boolean }[];
   stats: { sentences: number; tokens: number; vocabulary: number };
+  statistics: CorpusStatistics;
   neural: { vocabulary: number; perplexity: number } | null;
 };
 
@@ -148,6 +153,41 @@ export function CorpusManager() {
         </CardContent>
       </Card>
 
+      {summary && (
+        <section className="flex flex-col gap-5">
+          <h2 className="flex items-center gap-2 font-medium">
+            <HugeiconsIcon icon={ChartHistogramIcon} strokeWidth={2} className="size-5" />
+            Statistics
+          </h2>
+          <Section
+            title={`Sentence length in words · average ${summary.statistics.averageSentenceLength.toFixed(1)}`}
+          >
+            <Histogram
+              bars={summary.statistics.sentenceLengths.map((bucket) => ({
+                label: bucket.label,
+                value: bucket.count,
+              }))}
+            />
+          </Section>
+          <div className="grid gap-5 sm:grid-cols-2">
+            <Section title="Most common words">
+              <BarList bars={counted(summary.statistics.topWords)} />
+            </Section>
+            <Section title="Most common content words">
+              <BarList bars={counted(summary.statistics.topContentWords)} />
+            </Section>
+            <Section title="Most common word pairs">
+              <BarList bars={counted(summary.statistics.topPairs)} />
+            </Section>
+            <Section title="Tokens per source">
+              <BarList
+                bars={counted([...summary.statistics.sources].sort((a, b) => b.count - a.count).slice(0, 12))}
+              />
+            </Section>
+          </div>
+        </section>
+      )}
+
       <section className="flex flex-col gap-2">
         <h2 className="font-medium">Sources</h2>
         {!summary &&
@@ -200,6 +240,10 @@ function Stat({ icon, label, value }: { icon: IconSvgElement; label: string; val
       </CardContent>
     </Card>
   );
+}
+
+function counted(items: { word: string; count: number }[]) {
+  return items.map((item) => ({ label: item.word, value: item.count }));
 }
 
 function formatBytes(bytes: number): string {

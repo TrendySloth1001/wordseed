@@ -13,6 +13,7 @@ async function summary() {
   return {
     sources,
     stats: model.stats,
+    statistics: model.corpusStatistics(),
     neural: neural && { vocabulary: neural.vocabulary.length, perplexity: neural.perplexity },
   };
 }

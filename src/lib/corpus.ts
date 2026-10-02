@@ -13,8 +13,9 @@ export type Source = { name: string; bytes: number; uploaded: boolean };
 
 // Training takes a few seconds, so each model is built once per server
 // process (globalThis survives dev-server module reloads) and rebuilt only
-// when its files on disk change.
-type Cached<T> = { signature: string; value: Promise<T> };
+// when its files on disk change, or when the dev server reloads the model's
+// code (which gives the class a new identity).
+type Cached<T> = { signature: string; build: unknown; value: Promise<T> };
 const cache = globalThis as typeof globalThis & {
   sentenceModel?: Cached<SentenceModel>;
   neuralModel?: Cached<NeuralModel | null>;
@@ -49,11 +50,11 @@ export async function getModel(): Promise<SentenceModel> {
     throw new Error("No corpus found in data/corpus. Run `npm run corpus` to download it.");
   }
   const signature = await signatureOf(paths);
-  if (cache.sentenceModel?.signature !== signature) {
+  if (cache.sentenceModel?.signature !== signature || cache.sentenceModel.build !== SentenceModel) {
     const value = Promise.all(paths.map((file) => readFile(file, "utf8"))).then(
-      (texts) => new SentenceModel(texts),
+      (texts) => new SentenceModel(texts, paths.map((file) => path.basename(file, ".txt"))),
     );
-    cache.sentenceModel = { signature, value };
+    cache.sentenceModel = { signature, build: SentenceModel, value };
     value.catch(() => (cache.sentenceModel = undefined));
   }
   return cache.sentenceModel.value;
@@ -62,9 +63,9 @@ export async function getModel(): Promise<SentenceModel> {
 /** The trained LSTM, or null when `npm run train:neural` has not been run. */
 export async function getNeuralModel(): Promise<NeuralModel | null> {
   const signature = await signatureOf([path.join(NEURAL_DIR, "model.bin")]);
-  if (cache.neuralModel?.signature !== signature) {
+  if (cache.neuralModel?.signature !== signature || cache.neuralModel.build !== NeuralModel) {
     const value = NeuralModel.load(NEURAL_DIR);
-    cache.neuralModel = { signature, value };
+    cache.neuralModel = { signature, build: NeuralModel, value };
     value.catch(() => (cache.neuralModel = undefined));
   }
   return cache.neuralModel.value;

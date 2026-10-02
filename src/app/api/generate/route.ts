@@ -1,14 +1,10 @@
-import {
-  generate,
-  MAX_COUNT,
-  MAX_WORDS,
-  UnknownWordError,
-  type Engine,
-} from "@/lib/generate";
-import { LENGTHS, WORD, type Length, type Position } from "@/lib/text";
+import { generate, MAX_COUNT, MAX_WORDS, UnknownWordError } from "@/lib/generate";
+import type { Engine } from "@/lib/run-types";
+import { LENGTHS, WORD, type Length, type Position, type Readability } from "@/lib/text";
 
 const POSITIONS: Position[] = ["any", "start", "middle", "end"];
 const ENGINES: Engine[] = ["markov", "neural"];
+const READABILITY: Readability[] = ["any", "easy", "hard"];
 
 function invalid(error: string) {
   return Response.json({ error }, { status: 400 });
@@ -45,6 +41,7 @@ export async function POST(request: Request) {
         creativity,
         length,
         position,
+        readability: READABILITY.includes(body.readability) ? body.readability : "any",
         grammar: body.grammar !== false,
       }),
     );

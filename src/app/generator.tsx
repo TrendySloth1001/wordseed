@@ -1,17 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import {
   AiBrain01Icon,
   Alert02Icon,
-  Copy01Icon,
-  Csv01Icon,
+  BookOpen01Icon,
   GitBranchIcon,
+  GitCompareIcon,
   HashtagIcon,
   Idea01Icon,
-  InformationCircleIcon,
   Loading03Icon,
   Location01Icon,
   RulerIcon,
@@ -21,8 +19,8 @@ import {
   TextAlignLeftIcon,
   TextAlignRightIcon,
   TextFontIcon,
-  Txt01Icon,
 } from "@hugeicons/core-free-icons";
+import { engineName, RunView } from "@/components/run-view";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,22 +30,23 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import type { Engine, Run } from "@/lib/run-types";
 
-type Engine = "markov" | "neural";
+/** "both" runs the two engines on the same request and compares them. */
+type Mode = Engine | "both";
 
 const PRESETS = [5, 20, 100, 500];
-const MAX_COUNT: Record<Engine, number> = { markov: 1000, neural: 200 };
+const MAX_COUNT: Record<Mode, number> = { markov: 1000, neural: 200, both: 200 };
 const MAX_WORDS = 3;
-
-type Result = {
-  words: string[];
-  engine: Engine;
-  requested: number;
-  sentences: string[];
-  notes: string[];
-  stats: { sentences: number; tokens: number; vocabulary: number };
-};
 
 type Failure = { error: string; word?: string; suggestions?: string[] };
 
@@ -56,13 +55,14 @@ const SELECTED = "data-[state=on]:bg-primary data-[state=on]:text-primary-foregr
 export function Generator() {
   const [text, setText] = useState("");
   const [count, setCount] = useState(20);
-  const [engine, setEngine] = useState<Engine>("markov");
+  const [engine, setEngine] = useState<Mode>("markov");
   const [creativity, setCreativity] = useState(50);
   const [length, setLength] = useState("any");
   const [position, setPosition] = useState("any");
+  const [readability, setReadability] = useState("any");
   const [grammar, setGrammar] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<Result | null>(null);
+  const [runs, setRuns] = useState<Run[]>([]);
   const [failure, setFailure] = useState<Failure | null>(null);
 
   const words = splitWords(text);
@@ -72,61 +72,51 @@ export function Generator() {
   async function generate(input: string[]) {
     setLoading(true);
     setFailure(null);
+    const engines: Engine[] = engine === "both" ? ["markov", "neural"] : [engine];
     try {
-      const response = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          words: input,
-          count: Math.min(count, maxCount),
-          engine,
-          creativity: creativity / 100,
-          length,
-          position,
-          grammar,
-        }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setResult(data);
+      const responses = await Promise.all(
+        engines.map((each) =>
+          fetch("/api/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              words: input,
+              count: Math.min(count, maxCount),
+              engine: each,
+              creativity: creativity / 100,
+              length,
+              position,
+              readability,
+              grammar,
+            }),
+          }),
+        ),
+      );
+      const data = await Promise.all(responses.map((response) => response.json()));
+      const failed = responses.findIndex((response) => !response.ok);
+      if (failed === -1) {
+        setRuns(data);
       } else {
-        setResult(null);
-        setFailure(data);
+        setRuns([]);
+        setFailure(data[failed]);
       }
     } catch {
-      setResult(null);
+      setRuns([]);
       setFailure({ error: "Could not reach the server. Is it still running?" });
     } finally {
       setLoading(false);
     }
   }
 
-  async function copyAll() {
-    if (!result) return;
-    await navigator.clipboard.writeText(result.sentences.join("\n"));
-    toast.success(`Copied ${result.sentences.length} sentences`);
-  }
-
-  function download(kind: "txt" | "csv") {
-    if (!result) return;
-    const body =
-      kind === "txt"
-        ? result.sentences.join("\n") + "\n"
-        : // The BOM makes spreadsheet apps read the file as UTF-8.
-          "﻿number,sentence\n" +
-          result.sentences.map((s, i) => `${i + 1},"${s.replaceAll('"', '""')}"`).join("\n") +
-          "\n";
-    const url = URL.createObjectURL(new Blob([body], { type: kind === "txt" ? "text/plain" : "text/csv" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${result.words.join("-")}-sentences.${kind}`;
-    link.click();
-    URL.revokeObjectURL(url);
+  function pickWord(word: string) {
+    setText(word);
+    generate([word]);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   return (
     <div className="flex flex-col gap-6">
-      <Card>
+      <Card className="mx-auto w-full max-w-3xl">
         <CardContent>
           <form
             className="flex flex-col gap-5"
@@ -170,7 +160,7 @@ export function Generator() {
               icon={HashtagIcon}
               label="How many sentences"
               htmlFor="count"
-              hint={`Up to ${maxCount.toLocaleString("en")} with the ${engine === "markov" ? "Markov" : "neural"} model.`}
+              hint={`Up to ${maxCount.toLocaleString("en")} ${engine === "markov" ? "with the Markov model" : "when the neural model is used"}.`}
             >
               <div className="flex flex-wrap items-center gap-2">
                 <Input
@@ -203,23 +193,20 @@ export function Generator() {
 
             <div className="grid gap-5 border-t pt-5 sm:grid-cols-2">
               <Field
-                icon={engine === "markov" ? GitBranchIcon : AiBrain01Icon}
+                icon={MODE_ICONS[engine]}
                 label="Model"
-                hint={
-                  engine === "markov"
-                    ? "N-gram model. Instant, and knows every word in the corpus."
-                    : "Small LSTM network. Slower, and knows only the 8,000 commonest words."
-                }
+                hint={MODE_HINTS[engine]}
               >
                 <Choice
                   value={engine}
                   onChange={(value) => {
-                    setEngine(value as Engine);
-                    setCount((current) => Math.min(current, MAX_COUNT[value as Engine]));
+                    setEngine(value as Mode);
+                    setCount((current) => Math.min(current, MAX_COUNT[value as Mode]));
                   }}
                   options={[
                     { value: "markov", label: "Markov", icon: GitBranchIcon },
                     { value: "neural", label: "Neural", icon: AiBrain01Icon },
+                    { value: "both", label: "Both", icon: GitCompareIcon },
                   ]}
                 />
               </Field>
@@ -275,7 +262,19 @@ export function Generator() {
                 />
               </Field>
 
-              <div className="flex items-center justify-between gap-4 sm:col-span-2">
+              <Field icon={BookOpen01Icon} label="Reading level" hint={READABILITY_HINTS[readability]}>
+                <Choice
+                  value={readability}
+                  onChange={setReadability}
+                  options={[
+                    { value: "any", label: "Any" },
+                    { value: "easy", label: "Easy" },
+                    { value: "hard", label: "Hard" },
+                  ]}
+                />
+              </Field>
+
+              <div className="flex items-center justify-between gap-4">
                 <div className="flex flex-col gap-1">
                   <Label htmlFor="grammar" className="gap-2">
                     <HugeiconsIcon icon={SpellCheckIcon} strokeWidth={2} className="size-5" />
@@ -307,7 +306,7 @@ export function Generator() {
       </Card>
 
       {failure && (
-        <Alert>
+        <Alert className="mx-auto w-full max-w-3xl">
           <HugeiconsIcon icon={Alert02Icon} strokeWidth={2} className="size-5" />
           <AlertTitle>{failure.error}</AlertTitle>
           {failure.word && failure.suggestions && failure.suggestions.length > 0 && (
@@ -335,76 +334,95 @@ export function Generator() {
         </Alert>
       )}
 
-      {loading && !result && (
-        <div className="flex flex-col gap-2">
+      {loading && runs.length === 0 && (
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-2">
           {Array.from({ length: 4 }, (_, index) => (
-            <Skeleton key={index} className="h-14 w-full" />
+            <Skeleton key={index} className="h-16 w-full" />
           ))}
         </div>
       )}
 
-      {result && (
-        <section className={`flex flex-col gap-4 ${loading ? "opacity-50" : ""}`}>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-medium">
-              {result.sentences.length} sentence{result.sentences.length === 1 ? "" : "s"}
-              <span className="font-normal text-muted-foreground">
-                {" "}
-                · {result.engine === "markov" ? "Markov" : "Neural"} model
-              </span>
-            </h2>
-            {result.sentences.length > 0 && (
-              <div className="flex gap-2">
-                <Button type="button" variant="outline" size="lg" onClick={copyAll}>
-                  <HugeiconsIcon icon={Copy01Icon} strokeWidth={2} className="size-5" />
-                  Copy
-                </Button>
-                <Button type="button" variant="outline" size="lg" onClick={() => download("txt")}>
-                  <HugeiconsIcon icon={Txt01Icon} strokeWidth={2} className="size-5" />
-                  TXT
-                </Button>
-                <Button type="button" variant="outline" size="lg" onClick={() => download("csv")}>
-                  <HugeiconsIcon icon={Csv01Icon} strokeWidth={2} className="size-5" />
-                  CSV
-                </Button>
-              </div>
-            )}
-          </div>
+      {runs.length === 1 && (
+        <div className={`mx-auto w-full max-w-3xl ${loading ? "opacity-50" : ""}`}>
+          <RunView key={runs[0].id} run={runs[0]} onPickWord={pickWord} />
+        </div>
+      )}
 
-          {result.notes.map((note) => (
-            <Alert key={note}>
-              <HugeiconsIcon icon={InformationCircleIcon} strokeWidth={2} className="size-5" />
-              <AlertDescription className="text-foreground">{note}</AlertDescription>
-            </Alert>
-          ))}
-
-          <ol className="flex flex-col gap-2">
-            {result.sentences.map((sentence, index) => (
-              <li
-                key={sentence}
-                className="flex gap-3 rounded-lg border px-3 py-3 text-[0.95rem] leading-7 sm:px-4"
-              >
-                <span className="w-7 shrink-0 text-right font-mono text-xs leading-7 text-muted-foreground">
-                  {index + 1}
-                </span>
-                <span className="min-w-0 break-words">
-                  <Highlighted text={sentence} words={result.words} />
-                </span>
-              </li>
+      {runs.length === 2 && (
+        <div className={`flex flex-col gap-6 ${loading ? "opacity-50" : ""}`}>
+          <Comparison runs={runs} />
+          <div className="grid gap-8 lg:grid-cols-2">
+            {runs.map((run) => (
+              <RunView key={run.id} run={run} onPickWord={pickWord} />
             ))}
-          </ol>
-
-          <p className="text-xs text-muted-foreground">
-            Trained on {result.stats.sentences.toLocaleString("en")} sentences,{" "}
-            {result.stats.tokens.toLocaleString("en")} tokens and{" "}
-            {result.stats.vocabulary.toLocaleString("en")} distinct words. Best-scoring sentences
-            are listed first.
-          </p>
-        </section>
+          </div>
+        </div>
       )}
     </div>
   );
 }
+
+/** The two engines' numbers for the same request, side by side. */
+function Comparison({ runs }: { runs: Run[] }) {
+  const rows: [string, (run: Run) => string][] = [
+    ["Sentences returned", (run) => String(run.sentences.length)],
+    ["Average words", (run) => String(run.summary.averageWords)],
+    ["Average perplexity", (run) => String(run.summary.averagePerplexity)],
+    ["Average reading ease", (run) => String(Math.round(run.summary.averageReadability))],
+    ["Vocabulary diversity", (run) => `${Math.round(run.summary.diversity * 100)}%`],
+    ["Average copied run", (run) => `${run.summary.averageCopied} tokens`],
+    ["Candidates sampled", (run) => run.summary.funnel.sampled.toLocaleString("en")],
+    [
+      "Candidates that passed",
+      (run) =>
+        run.summary.funnel.sampled === 0
+          ? "0%"
+          : `${Math.round((run.summary.funnel.accepted / run.summary.funnel.sampled) * 100)}%`,
+    ],
+  ];
+  return (
+    <div className="mx-auto w-full max-w-3xl rounded-lg border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Same request, both models</TableHead>
+            {runs.map((run) => (
+              <TableHead key={run.id} className="text-right">
+                {engineName(run)}
+              </TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map(([label, value]) => (
+            <TableRow key={label}>
+              <TableCell className="whitespace-normal">{label}</TableCell>
+              {runs.map((run) => (
+                <TableCell key={run.id} className="text-right tabular-nums">
+                  {value(run)}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+const MODE_ICONS = { markov: GitBranchIcon, neural: AiBrain01Icon, both: GitCompareIcon };
+
+const MODE_HINTS: Record<Mode, string> = {
+  markov: "N-gram model. Instant, and knows every word in the corpus.",
+  neural: "Small LSTM network. Slower, and knows only the 8,000 commonest words.",
+  both: "Runs the same request through both models and compares the numbers.",
+};
+
+const READABILITY_HINTS: Record<string, string> = {
+  any: "No limit on reading ease.",
+  easy: "Flesch reading ease of 70 or more.",
+  hard: "Flesch reading ease below 50.",
+};
 
 const LENGTH_HINTS: Record<string, string> = {
   any: "4 to 30 words.",
@@ -481,20 +499,5 @@ function Choice({
         </ToggleGroupItem>
       ))}
     </ToggleGroup>
-  );
-}
-
-function Highlighted({ text, words }: { text: string; words: string[] }) {
-  const targets = words.map((word) => word.toLowerCase());
-  // Split on word boundaries the same way the tokenizer does, keeping the gaps.
-  const parts = text.split(/([\p{L}\p{N}]+(?:['-][\p{L}\p{N}]+)*)/u);
-  return parts.map((part, index) =>
-    targets.includes(part.toLowerCase()) ? (
-      <mark key={index} className="rounded-sm bg-foreground px-1 text-background">
-        {part}
-      </mark>
-    ) : (
-      part
-    ),
   );
 }

@@ -6,7 +6,7 @@
 import { isPunctuation, isTerminal } from "./text";
 import { inflect, IRREGULAR_VERBS } from "./word-forms";
 
-type Tag =
+export type Tag =
   | "det"
   | "poss"
   | "coord"
@@ -42,7 +42,11 @@ export const NOT_VERBS = words(
     "this that these those the a an and or but if as in on at by for of to with from",
 );
 
-export type Grammar = { check(tokens: string[]): boolean };
+export type Grammar = {
+  /** The tag of every token, and the first rule the sentence breaks (if any). */
+  explain(tokens: string[]): { tags: Tag[]; problem: string | null };
+  check(tokens: string[]): boolean;
+};
 
 /**
  * `baseVerbs` are verbs in their base form ("walk", "consider"); every regular
@@ -72,45 +76,58 @@ export function createGrammar(baseVerbs: Iterable<string>): Grammar {
     return "other";
   }
 
-  function check(tokens: string[]): boolean {
-    const tags = tokens.map(tag);
-    if (tags[0] === "punct") return false;
-    if (!tags.some((t) => t === "verb" || t === "be" || t === "aux" || t === "modal")) return false;
+  function problem(tokens: string[], tags: Tag[]): string | null {
+    if (tags[0] === "punct") return "starts with punctuation";
+    if (!tags.some((t) => t === "verb" || t === "be" || t === "aux" || t === "modal")) {
+      return "no verb";
+    }
 
     // What the sentence ends on, ignoring the final full stop.
     const lastIndex = isTerminal(tokens.at(-1)!) ? tokens.length - 2 : tokens.length - 1;
     const last = tags[lastIndex];
     if (last === "det" || last === "poss" || last === "coord" || last === "subord" || last === "punct") {
-      return false;
+      return `ends on "${tokens[lastIndex]}"`;
     }
-    if (tokens[lastIndex].toLowerCase() === "very") return false;
+    if (tokens[lastIndex].toLowerCase() === "very") return 'ends on "very"';
 
     for (let i = 0; i < lastIndex; i++) {
       const current = tags[i];
       const next = tags[i + 1];
       const word = tokens[i].toLowerCase();
       const following = tokens[i + 1].toLowerCase();
+      const pair = `"${tokens[i]} ${tokens[i + 1]}"`;
 
-      if (current === "punct" && next === "punct") return false;
-      if (word === following && !REPEATABLE.has(word)) return false;
-      if (word === "a" && /^[aeio]/.test(following) && !following.startsWith("one")) return false;
-      if (word === "an" && /^[^aeiouh]/.test(following)) return false;
+      if (current === "punct" && next === "punct") return "doubled punctuation";
+      if (word === following && !REPEATABLE.has(word)) return "repeated word";
+      if (word === "a" && /^[aeio]/.test(following) && !following.startsWith("one")) {
+        return '"a" before a vowel';
+      }
+      if (word === "an" && /^[^aeiouh]/.test(following)) return '"an" before a consonant';
 
       const functional =
         next === "det" || next === "coord" || next === "be" || next === "modal" || next === "punct";
       if (current === "det" && (functional || next === "prep" || next === "to" || next === "poss" || next === "subject")) {
-        return false;
+        return `determiner with no noun: ${pair}`;
       }
-      if (current === "poss" && (functional || next === "prep" || next === "subject")) return false;
-      if (current === "modal" && next === "modal") return false;
-      if (current === "subject" && next === "subject") return false;
-      if (current === "coord" && next === "coord") return false;
-      if (current === "be" && next === "be") return false;
-      if (current === "prep" && (next === "be" || next === "modal")) return false;
-      if (current === "to" && (next === "be" || next === "modal")) return false;
+      if (current === "poss" && (functional || next === "prep" || next === "subject")) {
+        return `possessive with no noun: ${pair}`;
+      }
+      if (current === "modal" && next === "modal") return `two modals: ${pair}`;
+      if (current === "subject" && next === "subject") return `two subjects: ${pair}`;
+      if (current === "coord" && next === "coord") return `two conjunctions: ${pair}`;
+      if (current === "be" && next === "be") return `two forms of "be": ${pair}`;
+      if (current === "prep" && (next === "be" || next === "modal")) {
+        return `preposition before a verb: ${pair}`;
+      }
+      if (current === "to" && (next === "be" || next === "modal")) return `"to" before a finite verb: ${pair}`;
     }
-    return true;
+    return null;
   }
 
-  return { check };
+  function explain(tokens: string[]) {
+    const tags = tokens.map(tag);
+    return { tags, problem: problem(tokens, tags) };
+  }
+
+  return { explain, check: (tokens) => explain(tokens).problem === null };
 }

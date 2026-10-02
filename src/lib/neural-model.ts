@@ -28,6 +28,11 @@ export type NeuralSampleOptions = {
   position: Position;
 };
 
+export type TokenReplay = {
+  probability: number;
+  options: { word: string; share: number }[];
+};
+
 export class NeuralModel {
   readonly vocabulary: string[];
   readonly perplexity: number;
@@ -39,6 +44,7 @@ export class NeuralModel {
   private gateBias: Float32Array;
   private outputBias: Float32Array;
   private lookup = new Map<string, number[]>();
+  private ids = new Map<string, number>();
   private terminals: number[] = [];
 
   private constructor(manifest: Manifest, weights: Float32Array) {
@@ -59,6 +65,7 @@ export class NeuralModel {
     for (let id = SPECIALS; id < size; id++) {
       const token = this.vocabulary[id];
       if (isTerminal(token)) this.terminals.push(id);
+      this.ids.set(token, id);
       const key = token.toLowerCase();
       const variants = this.lookup.get(key);
       if (variants) variants.push(id);
@@ -142,11 +149,68 @@ export class NeuralModel {
       input = next;
     }
 
+    const seedIndex = before.length;
     const ids = [...before.reverse(), seed, ...after];
     return {
       tokens: ids.map((id) => vocabulary[id]),
       score: logProbability / Math.max(steps, 1),
+      seed: seedIndex,
     };
+  }
+
+  /**
+   * Runs the network over a finished sentence in the order it was written
+   * (seed, the words after it, then the words before it right to left) and
+   * reports, for every token but the seed, how probable the network found it
+   * and what it considered most likely at that spot.
+   */
+  replay(tokens: string[], seed: number): (TokenReplay | null)[] {
+    const { hidden, vocabulary } = this;
+    const ids = tokens.map((token) => this.ids.get(token) ?? UNKNOWN);
+    const forward = Array.from({ length: tokens.length - seed - 1 }, (_, i) => seed + 1 + i);
+    const backward = Array.from({ length: seed }, (_, i) => seed - 1 - i);
+
+    const h = new Float32Array(hidden);
+    const c = new Float32Array(hidden);
+    const logits = new Float32Array(vocabulary.length);
+    const result: (TokenReplay | null)[] = tokens.map(() => null);
+
+    const predict = (index: number) => {
+      let max = -Infinity;
+      for (const value of logits) if (value > max) max = value;
+      let normaliser = 0;
+      for (const value of logits) normaliser += Math.exp(value - max);
+      const probabilityOf = (id: number) => Math.exp(logits[id] - max) / normaliser;
+      const top = Array.from(logits.keys())
+        .filter((id) => id >= END && id !== ids[index])
+        .sort((a, b) => logits[b] - logits[a])
+        .slice(0, 5);
+      result[index] = {
+        probability: ids[index] === UNKNOWN ? 0 : probabilityOf(ids[index]),
+        options: [ids[index], ...top]
+          .filter((id) => id !== UNKNOWN)
+          .map((id) => ({
+            word: id === END ? "(start of sentence)" : vocabulary[id],
+            share: probabilityOf(id),
+          }))
+          .sort((a, b) => b.share - a.share),
+      };
+    };
+
+    let input = ids[seed];
+    for (const index of forward) {
+      this.step(input, h, c, logits);
+      predict(index);
+      input = ids[index];
+    }
+    this.step(input, h, c, logits);
+    input = SEPARATOR;
+    for (const index of backward) {
+      this.step(input, h, c, logits);
+      predict(index);
+      input = ids[index];
+    }
+    return result;
   }
 
   /** One LSTM step: updates h and c in place and fills `logits`. */
