@@ -1,36 +1,37 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Word to sentences
 
-## Getting Started
+Type one to three words and get any number of sentences containing them. Both
+models are trained from scratch on 17 public-domain novels and about 1,100
+Simple English Wikipedia articles (2.4 million tokens).
 
-First, run the development server:
+## Run it
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Models
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Markov** (`src/lib/sentence-model.ts`): a bidirectional n-gram model over a
+  suffix array. It grows a sentence outwards from the seed word using
+  three-word contexts, backing off to two and one. Instant, and knows every
+  word in the corpus.
+- **Neural** (`ml/train.py`, `src/lib/neural-model.ts`): a one-layer LSTM with
+  an 8,000-word vocabulary, trained in PyTorch and run in TypeScript. It reaches
+  a held-out perplexity of about 64.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Each request samples more candidates than asked for, drops the ones that fail
+the length, position, novelty and grammar checks (`src/lib/grammar.ts`), and
+returns the highest-scoring ones (`src/lib/generate.ts`).
 
-## Learn More
+## Data
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run corpus        # re-download the novels and Wikipedia articles
+npm run train:neural  # retrain the LSTM (needs Python with torch and numpy)
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Text files added on the Corpus page are stored in `data/uploads/` and the
+Markov model retrains on them automatically. The novels are public domain
+(Project Gutenberg); the Wikipedia text is CC BY-SA 4.0.
