@@ -1,0 +1,8 @@
+The code in this repository is MIT licensed (see LICENSE). Bundled data:
+
+- data/corpus/*.txt (except wikipedia-simple.txt): public-domain books from
+  Project Gutenberg (https://www.gutenberg.org).
+- data/corpus/wikipedia-simple.txt: text from Simple English Wikipedia
+  (https://simple.wikipedia.org), CC BY-SA 4.0.
+- src/app/docs/images: Wikimedia Commons images, credited on the docs page
+  (CC BY-SA 3.0 / 4.0).
