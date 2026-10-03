@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import {
   AiBrain01Icon,
   Alert02Icon,
+  ArrowDown01Icon,
   BookOpen01Icon,
+  Cancel01Icon,
   GitBranchIcon,
   GitCompareIcon,
   HashtagIcon,
@@ -13,6 +15,8 @@ import {
   Loading03Icon,
   Location01Icon,
   RulerIcon,
+  ShuffleIcon,
+  SlidersHorizontalIcon,
   SparklesIcon,
   SpellCheckIcon,
   TextAlignCenterIcon,
@@ -22,7 +26,6 @@ import {
 } from "@hugeicons/core-free-icons";
 import { engineName, RunView } from "@/components/run-view";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -52,22 +55,71 @@ type Failure = { error: string; word?: string; suggestions?: string[] };
 
 const SELECTED = "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground";
 
-export function Generator() {
-  const [text, setText] = useState("");
-  const [count, setCount] = useState(20);
-  const [engine, setEngine] = useState<Mode>("markov");
-  const [creativity, setCreativity] = useState(50);
-  const [length, setLength] = useState("any");
-  const [position, setPosition] = useState("any");
-  const [readability, setReadability] = useState("any");
-  const [grammar, setGrammar] = useState(true);
+const EXAMPLES = ["river", "computer", "happy", "moon night"];
+const DEFAULTS = {
+  engine: "markov" as Mode,
+  creativity: 50,
+  length: "any",
+  position: "any",
+  readability: "any",
+  grammar: true,
+};
+
+/** Settings handed over in the page address, e.g. by "Use these settings". */
+export type InitialSettings = Partial<typeof DEFAULTS> & { words?: string; count?: number };
+
+export function Generator({ initial = {} }: { initial?: InitialSettings }) {
+  const start = { ...DEFAULTS, ...initial };
+  const [text, setText] = useState(initial.words ?? "");
+  // Kept as typed so the field can be emptied; clamped when it is used.
+  const [countText, setCountText] = useState(String(initial.count ?? 20));
+  const [engine, setEngine] = useState<Mode>(start.engine);
+  const [creativity, setCreativity] = useState(start.creativity);
+  const [length, setLength] = useState(start.length);
+  const [position, setPosition] = useState(start.position);
+  const [readability, setReadability] = useState(start.readability);
+  const [grammar, setGrammar] = useState(start.grammar);
+  const [showOptions, setShowOptions] = useState(false);
   const [loading, setLoading] = useState(false);
   const [runs, setRuns] = useState<Run[]>([]);
   const [failure, setFailure] = useState<Failure | null>(null);
+  const results = useRef<HTMLDivElement>(null);
+  const formColumn = useRef<HTMLDivElement>(null);
+  const slideFrom = useRef<number | null>(null);
 
   const words = splitWords(text);
   const tooMany = words.length > MAX_WORDS;
+  const invalid = words.find((word) => !WORD.test(word));
   const maxCount = MAX_COUNT[engine];
+  const count = Math.min(maxCount, Math.max(1, Math.floor(Number(countText)) || 1));
+
+  // What differs from the defaults, shown on the collapsed Options row.
+  const changed = [
+    engine !== DEFAULTS.engine && MODE_LABELS[engine],
+    creativity !== DEFAULTS.creativity && `Creativity ${creativity}%`,
+    length !== DEFAULTS.length && `${capitalise(length)} sentences`,
+    position !== DEFAULTS.position && words.length <= 1 && `Word at the ${position}`,
+    readability !== DEFAULTS.readability && `${capitalise(readability)} to read`,
+    !grammar && "Grammar check off",
+  ].filter((entry) => typeof entry === "string");
+
+  function resetOptions() {
+    setEngine(DEFAULTS.engine);
+    setCreativity(DEFAULTS.creativity);
+    setLength(DEFAULTS.length);
+    setPosition(DEFAULTS.position);
+    setReadability(DEFAULTS.readability);
+    setGrammar(DEFAULTS.grammar);
+  }
+
+  // Bring fresh results into view: below the form on a phone, beside it at
+  // the top of the page on a wide screen.
+  const newest = runs[0]?.id;
+  useEffect(() => {
+    if (!newest) return;
+    if (window.matchMedia("(min-width: 64rem)").matches) window.scrollTo({ top: 0, behavior: "smooth" });
+    else results.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [newest]);
 
   async function generate(input: string[]) {
     setLoading(true);
@@ -81,7 +133,7 @@ export function Generator() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               words: input,
-              count: Math.min(count, maxCount),
+              count,
               engine: each,
               creativity: creativity / 100,
               length,
@@ -94,14 +146,14 @@ export function Generator() {
       );
       const data = await Promise.all(responses.map((response) => response.json()));
       const failed = responses.findIndex((response) => !response.ok);
+      // A failed request leaves the previous results on screen.
       if (failed === -1) {
+        // Remember where the form is, to slide it from there to its new place.
+        slideFrom.current = formColumn.current?.getBoundingClientRect().left ?? null;
         setRuns(data);
-      } else {
-        setRuns([]);
-        setFailure(data[failed]);
       }
+      else setFailure(data[failed]);
     } catch {
-      setRuns([]);
       setFailure({ error: "Could not reach the server. Is it still running?" });
     } finally {
       setLoading(false);
@@ -110,13 +162,49 @@ export function Generator() {
 
   function pickWord(word: string) {
     setText(word);
-    generate([word]);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    generate(splitWords(word));
   }
 
+  // On a wide screen the form sits in the middle until there are results,
+  // then moves to the left with the results beside it. The form keeps its
+  // width, so the move is a plain slide: nothing inside it has to re-wrap.
+  const split = runs.length > 0;
+
+  useLayoutEffect(() => {
+    const from = slideFrom.current;
+    const panel = formColumn.current;
+    slideFrom.current = null;
+    if (!split || from === null || !panel) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const distance = from - panel.getBoundingClientRect().left;
+    if (distance === 0) return;
+    panel.animate([{ transform: `translateX(${distance}px)` }, { transform: "none" }], {
+      duration: 700,
+      easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+    });
+  }, [split]);
+
   return (
-    <div className="flex flex-col gap-6">
-      <Card className="mx-auto w-full max-w-3xl">
+    <div className={`flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-10 ${split ? "" : "lg:justify-center"}`}>
+      <div
+        ref={formColumn}
+        // *:shrink-0 keeps the card at full height so the column scrolls
+        // instead of squeezing it and cutting its content off.
+        className={`@container flex w-full shrink-0 flex-col gap-6 *:shrink-0 lg:w-[28rem] lg:px-1 lg:py-10 xl:w-[34rem] ${
+          split
+            ? "lg:sticky lg:top-14 lg:max-h-[calc(100dvh-3.5rem)] lg:overflow-y-auto lg:[scrollbar-width:thin]"
+            : ""
+        }`}
+      >
+      <header className="flex flex-col gap-2">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Sentences from a word</h1>
+        <p className="text-muted-foreground">
+          Type a word and get as many sentences containing it as you like, written by models
+          trained on classic novels and Simple English Wikipedia.
+        </p>
+      </header>
+
+      <Card className="w-full">
         <CardContent>
           <form
             className="flex flex-col gap-5"
@@ -127,32 +215,72 @@ export function Generator() {
           >
             <Field
               icon={TextFontIcon}
-              label="Words"
+              label="Your word"
               htmlFor="words"
               hint={
                 tooMany
                   ? `Use at most ${MAX_WORDS} words.`
-                  : "One word, or up to three that should all appear in each sentence."
+                  : invalid
+                    ? `"${invalid}" has characters that cannot be used. Use letters, numbers, hyphens or apostrophes.`
+                    : words.length > 1
+                      ? `Every sentence will contain ${words.join(" and ")}.`
+                      : "Type one word. Add a second or third, separated by spaces, to get all of them in each sentence."
               }
             >
-              <Input
-                id="words"
-                value={text}
-                onChange={(event) => setText(event.target.value)}
-                placeholder="river  ·  or  ·  moon night"
-                aria-invalid={tooMany}
-                autoComplete="off"
-                autoCapitalize="none"
-                className="h-12 text-base md:text-base"
-              />
-              {words.length > 1 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {words.map((word) => (
-                    <Badge key={word} variant="outline">
-                      {word}
-                    </Badge>
-                  ))}
+              <div className="flex flex-col gap-2 @xl:flex-row">
+                <div className="relative flex-1">
+                  <Input
+                    id="words"
+                    value={text}
+                    onChange={(event) => setText(event.target.value)}
+                    placeholder="e.g. river"
+                    aria-invalid={tooMany || Boolean(invalid)}
+                    autoComplete="off"
+                    autoCapitalize="none"
+                    autoFocus
+                    enterKeyHint="go"
+                    className="h-12 pr-11 text-base md:text-base"
+                  />
+                  {text !== "" && (
+                    <Button
+                      type="button"
+                      size="icon-lg"
+                      variant="ghost"
+                      aria-label="Clear the word"
+                      title="Clear"
+                      onClick={() => setText("")}
+                      className="absolute top-1.5 right-1.5"
+                    >
+                      <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} className="size-5" />
+                    </Button>
+                  )}
                 </div>
+                <Button
+                  type="submit"
+                  size="lg"
+                  disabled={loading || words.length === 0 || tooMany || Boolean(invalid)}
+                  className="h-12 px-5 text-base @xl:min-w-52"
+                >
+                  <HugeiconsIcon
+                    icon={loading ? Loading03Icon : SparklesIcon}
+                    strokeWidth={2}
+                    className={loading ? "size-5 animate-spin" : "size-5"}
+                  />
+                  {loading ? "Generating…" : `Generate ${count} sentence${count === 1 ? "" : "s"}`}
+                </Button>
+              </div>
+              {text === "" && (
+                <TryWords
+                  onPick={(word) => {
+                    setText(word);
+                    generate(splitWords(word));
+                  }}
+                />
+              )}
+              {loading && engine !== "markov" && (
+                <p className="text-xs text-muted-foreground" role="status">
+                  The neural model writes about 20 sentences a second, so this can take a moment.
+                </p>
               )}
             </Field>
 
@@ -160,27 +288,15 @@ export function Generator() {
               icon={HashtagIcon}
               label="How many sentences"
               htmlFor="count"
-              hint={`Up to ${maxCount.toLocaleString("en")} ${engine === "markov" ? "with the Markov model" : "when the neural model is used"}.`}
+              hint={`Pick a preset or type any number from 1 to ${maxCount.toLocaleString("en")}.`}
             >
               <div className="flex flex-wrap items-center gap-2">
-                <Input
-                  id="count"
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  max={maxCount}
-                  value={count}
-                  onChange={(event) =>
-                    setCount(Math.min(maxCount, Math.max(1, Math.floor(Number(event.target.value)) || 1)))
-                  }
-                  className="h-10 w-24 text-base md:text-base"
-                />
                 <ToggleGroup
                   type="single"
                   variant="outline"
                   size="lg"
                   value={String(count)}
-                  onValueChange={(value) => value && setCount(Number(value))}
+                  onValueChange={(value) => value && setCountText(value)}
                 >
                   {PRESETS.filter((preset) => preset <= maxCount).map((preset) => (
                     <ToggleGroupItem key={preset} value={String(preset)} className={`h-10 px-3.5 ${SELECTED}`}>
@@ -188,10 +304,59 @@ export function Generator() {
                     </ToggleGroupItem>
                   ))}
                 </ToggleGroup>
+                <Input
+                  id="count"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={maxCount}
+                  value={countText}
+                  onChange={(event) => setCountText(event.target.value)}
+                  onBlur={() => setCountText(String(count))}
+                  aria-label="Number of sentences"
+                  className="h-10 w-24 text-base md:text-base"
+                />
               </div>
             </Field>
 
-            <div className="grid gap-5 border-t pt-5 sm:grid-cols-2">
+            <div className="flex items-center gap-2 border-t pt-4">
+              <Button
+                type="button"
+                variant="ghost"
+                size="lg"
+                aria-expanded={showOptions}
+                aria-controls="options"
+                onClick={() => setShowOptions(!showOptions)}
+                className="-ml-2.5 h-10 min-w-0 flex-1 justify-start"
+              >
+                <HugeiconsIcon icon={SlidersHorizontalIcon} strokeWidth={2} className="size-5" />
+                <span className="shrink-0">Options</span>
+                <span className="min-w-0 truncate font-normal text-muted-foreground">
+                  {changed.length === 0 ? "Standard settings" : changed.join(" · ")}
+                </span>
+                <HugeiconsIcon
+                  icon={ArrowDown01Icon}
+                  strokeWidth={2}
+                  className={`ml-auto size-5 transition-transform duration-300 motion-reduce:transition-none ${
+                    showOptions ? "rotate-180" : ""
+                  }`}
+                />
+              </Button>
+              {changed.length > 0 && (
+                <Button type="button" variant="outline" size="lg" onClick={resetOptions} className="h-10">
+                  Reset
+                </Button>
+              )}
+            </div>
+
+            {/* Animating the row from 0fr to 1fr opens the panel to its natural height. */}
+            <div
+              className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none ${
+                showOptions ? "grid-rows-[1fr] opacity-100" : "-mt-5 grid-rows-[0fr] opacity-0"
+              }`}
+            >
+            <div id="options" inert={!showOptions} className="min-h-0 overflow-hidden">
+            <div className="grid gap-5 p-0.5 @xl:grid-cols-2">
               <Field
                 icon={MODE_ICONS[engine]}
                 label="Model"
@@ -201,12 +366,11 @@ export function Generator() {
                   value={engine}
                   onChange={(value) => {
                     setEngine(value as Mode);
-                    setCount((current) => Math.min(current, MAX_COUNT[value as Mode]));
                   }}
                   options={[
                     { value: "markov", label: "Markov", icon: GitBranchIcon },
                     { value: "neural", label: "Neural", icon: AiBrain01Icon },
-                    { value: "both", label: "Both", icon: GitCompareIcon },
+                    { value: "both", label: "Compare", icon: GitCompareIcon },
                   ]}
                 />
               </Field>
@@ -214,7 +378,7 @@ export function Generator() {
               <Field
                 icon={Idea01Icon}
                 label={`Creativity · ${creativity}%`}
-                hint="Low stays close to the source text. High takes more risks."
+                hint="Low keeps sentences close to the original texts. High gives stranger, more surprising ones."
               >
                 <Slider
                   value={[creativity]}
@@ -287,26 +451,14 @@ export function Generator() {
                 <Switch id="grammar" checked={grammar} onCheckedChange={setGrammar} />
               </div>
             </div>
-
-            <Button
-              type="submit"
-              size="lg"
-              disabled={loading || words.length === 0 || tooMany}
-              className="h-12 w-full text-base"
-            >
-              <HugeiconsIcon
-                icon={loading ? Loading03Icon : SparklesIcon}
-                strokeWidth={2}
-                className={loading ? "size-5 animate-spin" : "size-5"}
-              />
-              {loading ? "Generating…" : `Generate ${Math.min(count, maxCount)} sentences`}
-            </Button>
+            </div>
+            </div>
           </form>
         </CardContent>
       </Card>
 
       {failure && (
-        <Alert className="mx-auto w-full max-w-3xl">
+        <Alert className="w-full animate-in fade-in slide-in-from-top-2">
           <HugeiconsIcon icon={Alert02Icon} strokeWidth={2} className="size-5" />
           <AlertTitle>{failure.error}</AlertTitle>
           {failure.word && failure.suggestions && failure.suggestions.length > 0 && (
@@ -335,23 +487,24 @@ export function Generator() {
       )}
 
       {loading && runs.length === 0 && (
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-2">
+        <div className="flex w-full flex-col gap-2 lg:hidden">
           {Array.from({ length: 4 }, (_, index) => (
             <Skeleton key={index} className="h-16 w-full" />
           ))}
         </div>
       )}
+      </div>
 
-      {runs.length === 1 && (
-        <div className={`mx-auto w-full max-w-3xl ${loading ? "opacity-50" : ""}`}>
-          <RunView key={runs[0].id} run={runs[0]} onPickWord={pickWord} />
-        </div>
-      )}
-
-      {runs.length === 2 && (
-        <div className={`flex flex-col gap-6 ${loading ? "opacity-50" : ""}`}>
-          <Comparison runs={runs} />
-          <div className="grid gap-8 lg:grid-cols-2">
+      {split && (
+        <div ref={results} className="min-w-0 flex-1 scroll-mt-20 lg:py-10">
+          <div
+            // Remounting on a new run replays the entrance animation.
+            key={runs.map((run) => run.id).join()}
+            className={`flex animate-in flex-col gap-6 delay-150 duration-700 ease-out fill-mode-both fade-in slide-in-from-bottom-3 motion-reduce:animate-none ${
+              loading ? "opacity-50" : ""
+            }`}
+          >
+            {runs.length === 2 && <Comparison runs={runs} />}
             {runs.map((run) => (
               <RunView key={run.id} run={run} onPickWord={pickWord} />
             ))}
@@ -366,11 +519,11 @@ export function Generator() {
 function Comparison({ runs }: { runs: Run[] }) {
   const rows: [string, (run: Run) => string][] = [
     ["Sentences returned", (run) => String(run.sentences.length)],
-    ["Average words", (run) => String(run.summary.averageWords)],
+    ["Average length", (run) => `${run.summary.averageWords} words`],
     ["Average perplexity", (run) => String(run.summary.averagePerplexity)],
     ["Average reading ease", (run) => String(Math.round(run.summary.averageReadability))],
-    ["Vocabulary diversity", (run) => `${Math.round(run.summary.diversity * 100)}%`],
-    ["Average copied run", (run) => `${run.summary.averageCopied} tokens`],
+    ["Variety of words", (run) => `${Math.round(run.summary.diversity * 100)}%`],
+    ["Average copied run", (run) => `${run.summary.averageCopied} words`],
     ["Candidates sampled", (run) => run.summary.funnel.sampled.toLocaleString("en")],
     [
       "Candidates that passed",
@@ -381,7 +534,7 @@ function Comparison({ runs }: { runs: Run[] }) {
     ],
   ];
   return (
-    <div className="mx-auto w-full max-w-3xl rounded-lg border">
+    <div className="w-full rounded-lg border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -412,16 +565,22 @@ function Comparison({ runs }: { runs: Run[] }) {
 
 const MODE_ICONS = { markov: GitBranchIcon, neural: AiBrain01Icon, both: GitCompareIcon };
 
+const MODE_LABELS: Record<Mode, string> = {
+  markov: "Markov model",
+  neural: "Neural model",
+  both: "Compare both models",
+};
+
 const MODE_HINTS: Record<Mode, string> = {
-  markov: "N-gram model. Instant, and knows every word in the corpus.",
-  neural: "Small LSTM network. Slower, and knows only the 8,000 commonest words.",
-  both: "Runs the same request through both models and compares the numbers.",
+  markov: "Recombines phrases from the texts. Instant, and knows every word in them.",
+  neural: "A small neural network. Slower, plainer, and knows only the 8,000 most common words.",
+  both: "Runs your word through both models and shows the results side by side.",
 };
 
 const READABILITY_HINTS: Record<string, string> = {
-  any: "No limit on reading ease.",
-  easy: "Flesch reading ease of 70 or more.",
-  hard: "Flesch reading ease below 50.",
+  any: "Simple and difficult sentences alike.",
+  easy: "Only short, plain sentences (reading ease 70 or more).",
+  hard: "Only dense, difficult sentences (reading ease below 50).",
 };
 
 const LENGTH_HINTS: Record<string, string> = {
@@ -430,6 +589,109 @@ const LENGTH_HINTS: Record<string, string> = {
   medium: "9 to 16 words.",
   long: "17 to 32 words.",
 };
+
+const VISIBLE_WORDS = 4;
+const ROTATE_EVERY = 1800;
+
+/**
+ * Suggested words that keep changing: every couple of seconds one of them is
+ * swapped for a new random word from the corpus, slot by slot. Hovering or
+ * focusing the row pauses it so a word does not change under the pointer.
+ */
+function TryWords({ onPick }: { onPick: (word: string) => void }) {
+  const [shown, setShown] = useState(EXAMPLES);
+  const [paused, setPaused] = useState(false);
+  const pool = useRef<string[]>([]);
+  const slot = useRef(0);
+
+  const refill = useCallback(async () => {
+    const words: string[] = await fetch(`/api/words/random?count=40`)
+      .then((response) => (response.ok ? response.json() : []))
+      .catch(() => []);
+    pool.current.push(...words);
+  }, []);
+
+  /** The next pooled word that is not already on screen. */
+  const take = useCallback((visible: string[]) => {
+    let next = pool.current.shift();
+    while (next && visible.includes(next)) next = pool.current.shift();
+    if (pool.current.length < VISIBLE_WORDS * 2) refill();
+    return next;
+  }, [refill]);
+
+  useEffect(() => {
+    refill();
+  }, [refill]);
+
+  // The words on screen, readable from the timer without re-creating it.
+  const current = useRef(shown);
+  const show = useCallback((words: string[]) => {
+    current.current = words;
+    setShown(words);
+  }, []);
+
+  useEffect(() => {
+    if (paused || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const timer = setInterval(() => {
+      const next = take(current.current);
+      if (!next) return;
+      const updated = [...current.current];
+      updated[slot.current] = next;
+      slot.current = (slot.current + 1) % VISIBLE_WORDS;
+      show(updated);
+    }, ROTATE_EVERY);
+    return () => clearInterval(timer);
+  }, [paused, take, show]);
+
+  function shuffle() {
+    const fresh: string[] = [];
+    for (let i = 0; i < VISIBLE_WORDS; i++) {
+      fresh.push(take([...current.current, ...fresh]) ?? current.current[i]);
+    }
+    show(fresh);
+  }
+
+  return (
+    <div
+      className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
+    >
+      Try
+      {shown.map((word, index) => (
+        <Button
+          // A new word gets a new key, so it mounts and plays its entrance.
+          key={`${index}-${word}`}
+          type="button"
+          variant="outline"
+          onClick={() => onPick(word)}
+          className="animate-in duration-500 ease-out fill-mode-both fade-in slide-in-from-bottom-2 zoom-in-95 motion-reduce:animate-none"
+          style={{ animationDelay: `${index * 60}ms` }}
+        >
+          {word}
+        </Button>
+      ))}
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        aria-label="Show other words"
+        title="Show other words"
+        onClick={shuffle}
+      >
+        <HugeiconsIcon icon={ShuffleIcon} strokeWidth={2} className="size-4" />
+      </Button>
+    </div>
+  );
+}
+
+const WORD = /^[\p{L}\p{N}]+(?:['-][\p{L}\p{N}]+)*$/u;
+
+function capitalise(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
 
 function splitWords(text: string): string[] {
   const seen = new Set<string>();

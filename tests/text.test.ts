@@ -64,3 +64,22 @@ test("readingEase rates short plain sentences as easier", () => {
   assert.ok(easy > 90);
   assert.ok(hard < 0);
 });
+
+test("tokenize spells out e.g. and i.e. instead of splitting on their dots", () => {
+  assert.deepEqual(tokenize("Use a tool, e.g. a hammer, i.e. something heavy."), [
+    ["Use", "a", "tool", ",", "for", "example", ",", "a", "hammer", ",", "that", "is", ",", "something", "heavy", "."],
+  ]);
+});
+
+test("findPassage locates tokenised wording in the original punctuation", async () => {
+  const { findPassage, paragraphs, isHeading, sourceTitle } = await import("../src/lib/source-reader");
+  const blocks = paragraphs('CHAPTER I\n\n“Well,” said Mr. Darcy,\n“it didn’t rain.”\n\nIt rained later.');
+  assert.deepEqual(blocks, ["CHAPTER I", "“Well,” said Mr. Darcy, “it didn’t rain.”", "It rained later."]);
+  const passage = findPassage(blocks, "said Mr Darcy , it didn't rain");
+  assert.deepEqual(passage && blocks[1].slice(passage.start, passage.end), "said Mr. Darcy, “it didn’t rain");
+  assert.equal(findPassage(blocks, "rain")?.paragraph, 1); // not "rained"
+  assert.equal(findPassage(blocks, "rained", 1)?.paragraph, 2);
+  assert.equal(findPassage(blocks, "snow"), null);
+  assert.ok(isHeading(blocks[0]) && !isHeading(blocks[2]));
+  assert.equal(sourceTitle("pride-and-prejudice"), "Pride and prejudice");
+});

@@ -1,12 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import {
   AiBrain01Icon,
+  ArrowRight01Icon,
   Alert02Icon,
-  Delete02Icon,
   File01Icon,
   Loading03Icon,
   ChartHistogramIcon,
@@ -17,12 +18,14 @@ import {
 } from "@hugeicons/core-free-icons";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { DeleteButton } from "@/components/confirm-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarList, Histogram } from "@/components/bars";
 import { Section } from "@/components/word-profile";
 import type { CorpusStatistics } from "@/lib/sentence-model";
+import { sourceTitle } from "@/lib/source-reader";
 
 type Summary = {
   sources: { name: string; bytes: number; uploaded: boolean }[];
@@ -181,7 +184,14 @@ export function CorpusManager() {
             </Section>
             <Section title="Tokens per source">
               <BarList
-                bars={counted([...summary.statistics.sources].sort((a, b) => b.count - a.count).slice(0, 12))}
+                bars={[...summary.statistics.sources]
+                  .sort((a, b) => b.count - a.count)
+                  .slice(0, 12)
+                  .map((source) => ({
+                    label: sourceTitle(source.word),
+                    value: source.count,
+                    href: `/corpus/${encodeURIComponent(source.word)}`,
+                  }))}
               />
             </Section>
           </div>
@@ -189,32 +199,33 @@ export function CorpusManager() {
       )}
 
       <section className="flex flex-col gap-2">
-        <h2 className="font-medium">Sources</h2>
+        <h2 className="font-medium">Sources · tap one to read it</h2>
         {!summary &&
           Array.from({ length: 5 }, (_, index) => <Skeleton key={index} className="h-12 w-full" />)}
         <ul className="flex flex-col gap-2">
           {summary?.sources.map((source) => (
             <li key={source.name} className="flex items-center gap-3 rounded-lg border px-3 py-2">
-              <HugeiconsIcon icon={File01Icon} strokeWidth={2} className="size-5 shrink-0" />
-              <span className="min-w-0 flex-1 truncate text-sm">{source.name}</span>
-              <span className="shrink-0 text-xs text-muted-foreground">{formatBytes(source.bytes)}</span>
+              <Link
+                href={`/corpus/${encodeURIComponent(source.name.replace(/\.txt$/, ""))}`}
+                className="-my-2 flex min-w-0 flex-1 items-center gap-3 py-3"
+              >
+                <HugeiconsIcon icon={File01Icon} strokeWidth={2} className="size-5 shrink-0" />
+                <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                  {sourceTitle(source.name.replace(/\.txt$/, ""))}
+                </span>
+                <span className="shrink-0 text-xs text-muted-foreground">{formatBytes(source.bytes)}</span>
+              </Link>
               {source.uploaded ? (
                 <>
                   <Badge>Uploaded</Badge>
-                  <Button
-                    size="icon-lg"
-                    variant="ghost"
+                  <DeleteButton
+                    label={`Remove ${source.name}`}
                     disabled={busy}
-                    aria-label={`Remove ${source.name}`}
-                    onClick={() => remove(source.name)}
-                  >
-                    <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} className="size-5" />
-                  </Button>
+                    onConfirm={() => remove(source.name)}
+                  />
                 </>
               ) : (
-                <Badge variant="outline" className="hidden min-[400px]:inline-flex">
-                  Built-in
-                </Badge>
+                <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} className="size-5 shrink-0" />
               )}
             </li>
           ))}

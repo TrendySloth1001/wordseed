@@ -45,7 +45,9 @@ export function tokenize(text: string): string[][] {
     .replace(/[’‘]/g, "'")
     .replace(/[“”"_*()[\]]/g, "")
     .replace(/--+|—|–/g, " — ")
-    .replace(ABBREVIATIONS, "$1");
+    .replace(ABBREVIATIONS, "$1")
+    .replace(/\be\.g\.,?/gi, "for example,")
+    .replace(/\bi\.e\.,?/gi, "that is,");
 
   for (const block of cleaned.split(/\n\s*\n/)) {
     const paragraph = block.replace(/\s+/g, " ").trim();

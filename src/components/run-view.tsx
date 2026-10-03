@@ -11,6 +11,7 @@ import {
   Csv01Icon,
   InformationCircleIcon,
   Search01Icon,
+  Sorting01Icon,
   TextAlignLeftIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
@@ -39,6 +40,23 @@ const FUNNEL_LABELS: [keyof Funnel, string][] = [
   ["returned", "Returned to you"],
 ];
 
+const PAGE = 50;
+
+type Order = "best" | "shortest" | "longest" | "easiest";
+const ORDERS: { value: Order; label: string }[] = [
+  { value: "best", label: "Best first" },
+  { value: "shortest", label: "Shortest" },
+  { value: "longest", label: "Longest" },
+  { value: "easiest", label: "Easiest" },
+];
+
+/** A plain-language reading of the Flesch score. */
+function easeLabel(score: number): string {
+  if (score >= 70) return "easy to read";
+  if (score >= 50) return "moderate";
+  return "hard to read";
+}
+
 export function engineName(run: Pick<Run, "engine">): string {
   return run.engine === "markov" ? "Markov" : "Neural";
 }
@@ -47,6 +65,8 @@ export function RunView({ run, onPickWord }: { run: Run; onPickWord?: (word: str
   const [ratings, setRatings] = useState(run.ratings);
   const [open, setOpen] = useState<number | null>(null);
   const [profiled, setProfiled] = useState(run.words[0]);
+  const [order, setOrder] = useState<Order>("best");
+  const [shown, setShown] = useState(PAGE);
   const texts = run.sentences.map((sentence) => sentence.text);
 
   async function copyAll() {
@@ -93,6 +113,17 @@ export function RunView({ run, onPickWord }: { run: Run; onPickWord?: (word: str
     }
   }
 
+  async function copyOne(text: string) {
+    await navigator.clipboard.writeText(text);
+    toast.success("Sentence copied");
+  }
+
+  // Each sentence keeps its original index: ratings and breakdowns use it.
+  const ordered = run.sentences.map((sentence, index) => ({ sentence, index }));
+  if (order === "shortest") ordered.sort((a, b) => a.sentence.words - b.sentence.words);
+  if (order === "longest") ordered.sort((a, b) => b.sentence.words - a.sentence.words);
+  if (order === "easiest") ordered.sort((a, b) => b.sentence.readability - a.sentence.readability);
+
   const { summary } = run;
   const liked = Object.values(ratings).filter((rating) => rating === 1).length;
   const disliked = Object.values(ratings).filter((rating) => rating === -1).length;
@@ -108,7 +139,7 @@ export function RunView({ run, onPickWord }: { run: Run; onPickWord?: (word: str
           <div className="flex gap-2">
             <Button type="button" variant="outline" size="lg" onClick={copyAll}>
               <HugeiconsIcon icon={Copy01Icon} strokeWidth={2} className="size-5" />
-              Copy
+              Copy all
             </Button>
             <Button type="button" variant="outline" size="lg" onClick={() => download("txt")}>
               <HugeiconsIcon icon={Txt01Icon} strokeWidth={2} className="size-5" />
@@ -137,36 +168,75 @@ export function RunView({ run, onPickWord }: { run: Run; onPickWord?: (word: str
           </TabsTrigger>
           <TabsTrigger value="summary">
             <HugeiconsIcon icon={Analytics01Icon} strokeWidth={2} className="size-4" />
-            Numbers
+            Statistics
           </TabsTrigger>
           <TabsTrigger value="word">
             <HugeiconsIcon icon={Search01Icon} strokeWidth={2} className="size-4" />
-            Word
+            Word info
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="sentences" className="flex flex-col gap-3 pt-2">
+          {run.sentences.length > 1 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <HugeiconsIcon icon={Sorting01Icon} strokeWidth={2} className="size-5" />
+                Order
+              </span>
+              <ToggleGroup
+                type="single"
+                variant="outline"
+                spacing={0}
+                value={order}
+                onValueChange={(value) => {
+                  if (!value) return;
+                  setOrder(value as Order);
+                  setOpen(null);
+                }}
+              >
+                {ORDERS.map((option) => (
+                  <ToggleGroupItem
+                    key={option.value}
+                    value={option.value}
+                    className="h-9 px-3 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                  >
+                    {option.label}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            </div>
+          )}
           <ol className="flex flex-col gap-2">
-            {run.sentences.map((sentence, index) => (
+            {ordered.slice(0, shown).map(({ sentence, index }, place) => (
               <li key={sentence.text} className="rounded-lg border">
                 <div className="flex gap-3 px-3 pt-3 text-[0.95rem] leading-7 sm:px-4">
                   <span className="w-7 shrink-0 text-right font-mono text-xs leading-7 text-muted-foreground">
-                    {index + 1}
+                    {place + 1}
                   </span>
                   <span className="min-w-0 break-words">
                     <Highlighted text={sentence.text} words={run.words} />
                   </span>
                 </div>
-                <div className="flex items-center gap-1 py-1 pr-1 pl-13 sm:pl-14">
+                <div className="flex items-center gap-0.5 py-1 pr-1 pl-13 sm:pl-14">
                   <span className="mr-auto min-w-0 truncate text-xs text-muted-foreground">
-                    {sentence.words} words · perplexity {Math.round(sentence.perplexity)} · ease{" "}
-                    {Math.round(sentence.readability)}
+                    {sentence.words} words · {easeLabel(sentence.readability)}
                   </span>
+                  <Button
+                    type="button"
+                    size="icon-lg"
+                    variant="ghost"
+                    aria-label="Copy this sentence"
+                    title="Copy this sentence"
+                    onClick={() => copyOne(sentence.text)}
+                  >
+                    <HugeiconsIcon icon={Copy01Icon} strokeWidth={2} className="size-5" />
+                  </Button>
                   <Button
                     type="button"
                     size="icon-lg"
                     variant={ratings[index] === 1 ? "default" : "ghost"}
                     aria-label="Good sentence"
+                    title="Good sentence"
                     aria-pressed={ratings[index] === 1}
                     onClick={() => rate(index, 1)}
                   >
@@ -177,6 +247,7 @@ export function RunView({ run, onPickWord }: { run: Run; onPickWord?: (word: str
                     size="icon-lg"
                     variant={ratings[index] === -1 ? "default" : "ghost"}
                     aria-label="Bad sentence"
+                    title="Bad sentence"
                     aria-pressed={ratings[index] === -1}
                     onClick={() => rate(index, -1)}
                   >
@@ -184,12 +255,15 @@ export function RunView({ run, onPickWord }: { run: Run; onPickWord?: (word: str
                   </Button>
                   <Button
                     type="button"
-                    size="icon-lg"
-                    variant="ghost"
-                    aria-label="Show how this sentence was built"
+                    size="lg"
+                    variant={open === index ? "secondary" : "ghost"}
+                    aria-label="Explain how this sentence was built"
+                    title="Explain how this sentence was built"
                     aria-expanded={open === index}
                     onClick={() => setOpen(open === index ? null : index)}
+                    className="px-2"
                   >
+                    <span className="max-sm:hidden">Explain</span>
                     <HugeiconsIcon
                       icon={open === index ? ArrowUp01Icon : ArrowDown01Icon}
                       strokeWidth={2}
@@ -200,10 +274,26 @@ export function RunView({ run, onPickWord }: { run: Run; onPickWord?: (word: str
                 {open === index && (
                   <div className="flex flex-col gap-4 border-t px-3 py-4 sm:px-4">
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                      <Tile label="Perplexity" value={String(sentence.perplexity)} />
-                      <Tile label="Reading ease" value={String(Math.round(sentence.readability))} />
-                      <Tile label="Longest copied run" value={`${sentence.copied} tokens`} />
-                      <Tile label="Rare words" value={`${Math.round(sentence.rare * 100)}%`} />
+                      <Tile
+                        label="Perplexity"
+                        value={String(sentence.perplexity)}
+                        hint="lower means more natural"
+                      />
+                      <Tile
+                        label="Reading ease"
+                        value={String(Math.round(sentence.readability))}
+                        hint={easeLabel(sentence.readability)}
+                      />
+                      <Tile
+                        label="Longest copied run"
+                        value={`${sentence.copied} words`}
+                        hint="taken in a row from one text"
+                      />
+                      <Tile
+                        label="Rare words"
+                        value={`${Math.round(sentence.rare * 100)}%`}
+                        hint="of this sentence"
+                      />
                     </div>
                     <SentenceDetail runId={run.id} index={index} />
                   </div>
@@ -211,23 +301,43 @@ export function RunView({ run, onPickWord }: { run: Run; onPickWord?: (word: str
               </li>
             ))}
           </ol>
+          {ordered.length > shown && (
+            <Button type="button" variant="outline" size="lg" onClick={() => setShown(shown + PAGE)} className="h-11">
+              Show {Math.min(PAGE, ordered.length - shown)} more · {ordered.length - shown} left
+            </Button>
+          )}
           <p className="text-xs text-muted-foreground">
-            Best-scoring sentences are listed first. Perplexity is measured with the Markov model
-            for both engines; lower means more expected. Reading ease is the Flesch score; higher
-            is easier.
+            &ldquo;Best first&rdquo; puts the sentences the model itself finds most likely at the
+            top. Copy all and the downloads always include every sentence.
           </p>
         </TabsContent>
 
         <TabsContent value="summary" className="flex flex-col gap-5 pt-2">
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            <Tile label="Average words" value={String(summary.averageWords)} />
-            <Tile label="Average perplexity" value={String(summary.averagePerplexity)} />
-            <Tile label="Average reading ease" value={String(Math.round(summary.averageReadability))} />
-            <Tile label="Vocabulary diversity" value={`${Math.round(summary.diversity * 100)}%`} />
-            <Tile label="Average copied run" value={`${summary.averageCopied} tokens`} />
-            <Tile label="Rated good / bad" value={`${liked} / ${disliked}`} />
+            <Tile label="Average length" value={`${summary.averageWords} words`} />
+            <Tile
+              label="Average perplexity"
+              value={String(summary.averagePerplexity)}
+              hint="lower means more natural"
+            />
+            <Tile
+              label="Average reading ease"
+              value={String(Math.round(summary.averageReadability))}
+              hint={easeLabel(summary.averageReadability)}
+            />
+            <Tile
+              label="Variety"
+              value={`${Math.round(summary.diversity * 100)}%`}
+              hint="different words out of all words"
+            />
+            <Tile
+              label="Average copied run"
+              value={`${summary.averageCopied} words`}
+              hint="taken in a row from one text"
+            />
+            <Tile label="Your ratings" value={`${liked} good · ${disliked} bad`} />
           </div>
-          <Section title="What happened to every candidate">
+          <Section title="How the sentences were picked">
             <BarList
               bars={FUNNEL_LABELS.filter(([key]) => summary.funnel[key] > 0 || key === "returned").map(
                 ([key, label]) => ({
@@ -253,8 +363,8 @@ export function RunView({ run, onPickWord }: { run: Run; onPickWord?: (word: str
             </Section>
           )}
           <p className="text-xs text-muted-foreground">
-            Vocabulary diversity is distinct words divided by total words across these sentences.
-            Trained on {run.stats.sentences.toLocaleString("en")} sentences,{" "}
+            The model writes more candidates than you ask for, drops the ones that fail a check
+            and returns the best of the rest. Trained on {run.stats.sentences.toLocaleString("en")} sentences,{" "}
             {run.stats.tokens.toLocaleString("en")} tokens and{" "}
             {run.stats.vocabulary.toLocaleString("en")} distinct words.
           </p>

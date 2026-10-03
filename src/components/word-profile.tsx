@@ -5,6 +5,7 @@ import { BarList } from "@/components/bars";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { WordProfile as Profile } from "@/lib/sentence-model";
+import { sourceTitle } from "@/lib/source-reader";
 
 export function WordProfile({ word, onPickWord }: { word: string; onPickWord?: (word: string) => void }) {
   const [loaded, setLoaded] = useState<{ word: string; profile: Profile | null } | null>(null);
@@ -30,9 +31,9 @@ export function WordProfile({ word, onPickWord }: { word: string; onPickWord?: (
   return (
     <div className="flex flex-col gap-5">
       <div className="grid grid-cols-3 gap-2">
-        <Tile label="Occurrences" value={profile.count.toLocaleString("en")} />
-        <Tile label="Per million words" value={Math.round(profile.perMillion).toLocaleString("en")} />
-        <Tile label="Frequency rank" value={`#${profile.rank.toLocaleString("en")}`} />
+        <Tile label="Times used" value={profile.count.toLocaleString("en")} hint="in all the texts" />
+        <Tile label="Per million" value={Math.round(profile.perMillion).toLocaleString("en")} hint="words of text" />
+        <Tile label="Rank" value={`#${profile.rank.toLocaleString("en")}`} hint="1 is the commonest" />
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
@@ -44,12 +45,19 @@ export function WordProfile({ word, onPickWord }: { word: string; onPickWord?: (
         </Section>
       </div>
 
-      <Section title="Sources that use it">
-        <BarList bars={bars(profile.sources.slice(0, 8))} />
+      <Section title="Texts that use it · tap one to read it there">
+        <BarList
+          bars={profile.sources.slice(0, 8).map((source) => ({
+            label: sourceTitle(source.word),
+            value: source.count,
+            display: source.count.toLocaleString("en"),
+            href: `/corpus/${encodeURIComponent(source.word)}?find=${encodeURIComponent(profile.word)}`,
+          }))}
+        />
       </Section>
 
       {profile.similar.length > 0 && (
-        <Section title="Words used in similar contexts">
+        <Section title="Similar words · tap one to generate sentences for it">
           <div className="flex flex-wrap gap-2">
             {profile.similar.map((similar) => (
               <Button
@@ -70,11 +78,12 @@ export function WordProfile({ word, onPickWord }: { word: string; onPickWord?: (
   );
 }
 
-export function Tile({ label, value }: { label: string; value: string }) {
+export function Tile({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
     <div className="flex flex-col gap-0.5 rounded-lg border px-3 py-2">
       <span className="text-lg font-semibold tabular-nums">{value}</span>
-      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-xs font-medium">{label}</span>
+      {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
     </div>
   );
 }

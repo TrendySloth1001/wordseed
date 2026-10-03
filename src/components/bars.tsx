@@ -1,8 +1,9 @@
 // Single-series, single-ink charts: one bar list and one histogram.
+import Link from "next/link";
 
 const compact = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
 
-export type Bar = { label: string; value: number; display?: string };
+export type Bar = { label: string; value: number; display?: string; href?: string };
 
 /** Horizontal bars with the label and value written out on every row. */
 export function BarList({ bars, max }: { bars: Bar[]; max?: number }) {
@@ -11,9 +12,15 @@ export function BarList({ bars, max }: { bars: Bar[]; max?: number }) {
     <ul className="flex flex-col gap-1.5">
       {bars.map((bar) => (
         <li key={bar.label} className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)_auto] items-center gap-2 text-sm">
-          <span className="truncate" title={bar.label}>
-            {bar.label}
-          </span>
+          {bar.href ? (
+            <Link href={bar.href} title={bar.label} className="truncate underline underline-offset-4">
+              {bar.label}
+            </Link>
+          ) : (
+            <span className="truncate" title={bar.label}>
+              {bar.label}
+            </span>
+          )}
           <span className="h-2 rounded-full bg-muted">
             <span
               className="block h-2 min-w-0.5 rounded-full bg-foreground"

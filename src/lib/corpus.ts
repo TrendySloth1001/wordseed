@@ -82,6 +82,17 @@ export async function listSources(): Promise<Source[]> {
   return sources;
 }
 
+/** The full text of one corpus file, named without its .txt extension. */
+export async function readSource(name: string): Promise<string | null> {
+  // Only names that are actually in the corpus are ever turned into a path.
+  for (const directory of [CORPUS_DIR, UPLOAD_DIR]) {
+    if ((await textFiles(directory)).includes(`${name}.txt`)) {
+      return readFile(path.join(directory, `${name}.txt`), "utf8");
+    }
+  }
+  return null;
+}
+
 /** Reduces an uploaded file name to a safe `something.txt` inside UPLOAD_DIR. */
 function uploadPath(name: string): string | null {
   const base = path

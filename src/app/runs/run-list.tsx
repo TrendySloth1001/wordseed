@@ -6,13 +6,12 @@ import { toast } from "sonner";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   AiBrain01Icon,
-  Delete02Icon,
   GitBranchIcon,
   ThumbsDownIcon,
   ThumbsUpIcon,
 } from "@hugeicons/core-free-icons";
 import { engineName } from "@/components/run-view";
-import { Button } from "@/components/ui/button";
+import { DeleteButton } from "@/components/confirm-button";
 import { Tile } from "@/components/word-profile";
 import type { Engine, RunListItem } from "@/lib/run-types";
 
@@ -28,10 +27,21 @@ export function RunList({ initial }: { initial: RunListItem[] }) {
       return;
     }
     setRuns((current) => current.filter((run) => run.id !== id));
+    toast.success("Deleted");
   }
 
   if (runs.length === 0) {
-    return <p className="text-muted-foreground">Nothing yet. Generate some sentences first.</p>;
+    return (
+      <div className="flex flex-col items-start gap-3">
+        <p className="text-muted-foreground">Nothing saved yet. Sentences you generate appear here.</p>
+        <Link
+          href="/"
+          className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground"
+        >
+          Generate sentences
+        </Link>
+      </div>
+    );
   }
 
   return (
@@ -76,14 +86,10 @@ export function RunList({ initial }: { initial: RunListItem[] }) {
                 {run.disliked}
               </span>
             )}
-            <Button
-              size="icon-lg"
-              variant="ghost"
-              aria-label={`Delete the run for ${run.words.join(", ")}`}
-              onClick={() => remove(run.id)}
-            >
-              <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} className="size-5" />
-            </Button>
+            <DeleteButton
+              label={`Delete the saved sentences for ${run.words.join(", ")}`}
+              onConfirm={() => remove(run.id)}
+            />
           </li>
         ))}
       </ul>

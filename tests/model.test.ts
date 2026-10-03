@@ -125,3 +125,13 @@ test("corpus statistics bucket sentence lengths", () => {
   assert.equal(statistics.sentenceLengths.reduce((sum, bucket) => sum + bucket.count, 0), 8);
   assert.deepEqual(statistics.sources.map((source) => source.word), ["fables", "notes"]);
 });
+
+test("ngramCount and rankFrequency report raw counts", () => {
+  assert.equal(model.ngramCount(["the", "old", "tree"]), 4);
+  assert.equal(model.ngramCount(["lazy"]), 3);
+  assert.equal(model.ngramCount(["tree", "lazy"]), 0);
+  const curve = model.rankFrequency(5);
+  assert.equal(curve[0].rank, 1);
+  assert.equal(curve[0].count, model.frequency("the"));
+  assert.ok(curve.every((point, i) => i === 0 || point.count <= curve[i - 1].count));
+});

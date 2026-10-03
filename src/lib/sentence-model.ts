@@ -108,6 +108,7 @@ export class SentenceModel {
   private lo = 0;
   private statistics?: CorpusStatistics;
   private ranks?: Map<string, number>;
+  private seeds?: string[];
 
   constructor(texts: string[], names: string[] = texts.map((_, i) => `text ${i + 1}`)) {
     const perText = texts.map(tokenize);
@@ -251,7 +252,43 @@ export class SentenceModel {
     return scored.slice(0, limit).map((entry) => entry.word);
   }
 
+  /**
+   * Random everyday words that make good seeds: lowercase content words that
+   * are neither so rare that few sentences exist nor so common they are dull.
+   */
+  randomWords(count: number): string[] {
+    this.seeds ??= [...this.lookup]
+      .filter(([key, variants]) => {
+        if (!/^[a-z]{4,10}$/.test(key) || STOPWORDS.has(key) || NOT_VERBS.has(key)) return false;
+        if (!variants.some((id) => this.vocabulary[id] === key)) return false;
+        const frequency = this.count(variants);
+        return frequency >= 40 && frequency <= 4000;
+      })
+      .map(([key]) => key);
+    const picked = new Set<string>();
+    while (picked.size < Math.min(count, this.seeds.length)) {
+      picked.add(this.seeds[Math.floor(Math.random() * this.seeds.length)]);
+    }
+    return [...picked];
+  }
+
   // ---------------------------------------------------------------- analysis
+
+  /** How often a sequence of one to three tokens occurs, exactly as written. */
+  ngramCount(tokens: string[]): number {
+    const [a, b, c] = tokens.map((token) => this.ids.get(token) ?? -1);
+    return this.find(a, b ?? 0, c ?? 0, tokens.length);
+  }
+
+  /** Word frequency against frequency rank, sampled at log-spaced ranks. */
+  rankFrequency(points = 48): { rank: number; count: number }[] {
+    const counts = [...this.lookup.values()].map((variants) => this.count(variants)).sort((a, b) => b - a);
+    const ranks = new Set<number>();
+    for (let i = 0; i < points; i++) {
+      ranks.add(Math.round(Math.exp((Math.log(counts.length) * i) / (points - 1))));
+    }
+    return [...ranks].map((rank) => ({ rank, count: counts[rank - 1] }));
+  }
 
   /** The model's probability of each token given the two before it. */
   probabilities(tokens: string[]): number[] {

@@ -1,11 +1,20 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Alert02Icon, CheckmarkCircle02Icon, Layers01Icon, Route01Icon } from "@hugeicons/core-free-icons";
+import {
+  Alert02Icon,
+  ArrowDown01Icon,
+  ArrowUp01Icon,
+  CheckmarkCircle02Icon,
+  Layers01Icon,
+  Route01Icon,
+} from "@hugeicons/core-free-icons";
 import { BarList } from "@/components/bars";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { SentenceDetail as Detail } from "@/lib/run-types";
+import { sourceTitle } from "@/lib/source-reader";
 
 const TAG_NAMES: Record<string, string> = {
   det: "determiner",
@@ -87,8 +96,8 @@ export function SentenceDetail({ runId, index }: { runId: string; index: number 
           })}
         </div>
         <p className="text-xs text-muted-foreground">
-          Darker words were less expected by the model. The thick border marks the seed word. Tap a
-          word to see how it was chosen.
+          Tap any word to see how it was chosen. Darker words surprised the model more; the word
+          with the thick border is where the sentence started.
         </p>
       </div>
 
@@ -125,24 +134,18 @@ export function SentenceDetail({ runId, index }: { runId: string; index: number 
           <HugeiconsIcon icon={Layers01Icon} strokeWidth={2} className="size-5" />
           Where the wording comes from
         </p>
-        <ul className="flex flex-col gap-1">
+        <ul className="flex flex-col gap-1.5">
           {detail.segments.map((segment) => (
-            <li key={segment.start} className="flex items-baseline justify-between gap-3">
-              <span className="min-w-0 break-words">
-                {detail.tokens
-                  .slice(segment.start, segment.start + segment.length)
-                  .map((entry) => entry.text)
-                  .join(" ")}
-              </span>
-              <span className="shrink-0 text-xs text-muted-foreground">
-                {segment.source ?? "not in the corpus"} · {segment.length}
-              </span>
-            </li>
+            <SegmentRow
+              key={segment.start}
+              source={segment.source}
+              words={detail.tokens.slice(segment.start, segment.start + segment.length).map((entry) => entry.text)}
+            />
           ))}
         </ul>
         <p className="text-xs text-muted-foreground">
-          Each line is the longest stretch found word for word in one source, with its length in
-          tokens.
+          Each line is a stretch that appears word for word in the text named beside it. Tap a
+          line to read the original passage.
         </p>
       </div>
 
@@ -153,9 +156,86 @@ export function SentenceDetail({ runId, index }: { runId: string; index: number 
           className="size-5 shrink-0"
         />
         {detail.grammarProblem
-          ? `Grammar check would reject it: ${detail.grammarProblem}.`
+          ? `The grammar check would reject this sentence: ${detail.grammarProblem}.`
           : "Passes the grammar check."}
       </p>
     </div>
+  );
+}
+
+type Passage = { text: string; start: number; end: number };
+
+/** One copied stretch; opening it shows the original passage around it. */
+function SegmentRow({ words, source }: { words: string[]; source: string | null }) {
+  const [open, setOpen] = useState(false);
+  const [passage, setPassage] = useState<Passage | "missing" | null>(null);
+  const phrase = words.join(" ");
+  const shown = phrase.replace(/ ([,;:.!?])/g, "$1");
+
+  if (!source) {
+    return (
+      <li className="flex items-baseline justify-between gap-3 px-2 py-1">
+        <span className="min-w-0 break-words">{shown}</span>
+        <span className="shrink-0 text-xs text-muted-foreground">not in the texts</span>
+      </li>
+    );
+  }
+
+  const address = `${encodeURIComponent(source)}?find=${encodeURIComponent(phrase)}`;
+
+  function toggle() {
+    setOpen(!open);
+    if (passage) return;
+    fetch(`/api/sources/${address}`)
+      .then((response) => (response.ok ? response.json() : "missing"))
+      .catch(() => "missing")
+      .then(setPassage);
+  }
+
+  // Enough of the paragraph to read the stretch in context.
+  const from = passage && passage !== "missing" ? Math.max(0, passage.start - 220) : 0;
+  const to = passage && passage !== "missing" ? Math.min(passage.text.length, passage.end + 220) : 0;
+
+  return (
+    <li className="rounded-lg border">
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <span className="min-w-0 break-words">{shown}</span>
+        <span className="flex shrink-0 items-center gap-1 text-xs font-medium underline underline-offset-4">
+          {sourceTitle(source)}
+          <HugeiconsIcon icon={open ? ArrowUp01Icon : ArrowDown01Icon} strokeWidth={2} className="size-4" />
+        </span>
+      </button>
+      {open && (
+        <div className="flex flex-col gap-2 border-t px-2 py-2">
+          {passage === null && <Skeleton className="h-16 w-full" />}
+          {passage === "missing" && (
+            <p className="text-muted-foreground">The exact passage could not be located in this text.</p>
+          )}
+          {passage && passage !== "missing" && (
+            <blockquote className="border-l-2 border-foreground pl-3 leading-7">
+              {from > 0 && "… "}
+              {passage.text.slice(from, passage.start)}
+              <mark className="rounded-sm bg-foreground px-1 text-background">
+                {passage.text.slice(passage.start, passage.end)}
+              </mark>
+              {passage.text.slice(passage.end, to)}
+              {to < passage.text.length && " …"}
+            </blockquote>
+          )}
+          <Link
+            href={`/corpus/${address}`}
+            target="_blank"
+            className="self-start text-sm font-medium underline underline-offset-4"
+          >
+            Read it in {sourceTitle(source)} (opens a new tab)
+          </Link>
+        </div>
+      )}
+    </li>
   );
 }

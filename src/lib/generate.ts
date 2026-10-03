@@ -165,7 +165,15 @@ export async function generate(request: GenerateRequest): Promise<Run> {
     text,
     words: candidate.tokens.filter((token) => !isPunctuation(token)).length,
     perplexity: round(model.perplexity(candidate.tokens)),
-    copied: Math.max(...model.segments(candidate.tokens).map((segment) => segment.length)),
+    // Longest copied stretch, counted in words rather than tokens.
+    copied: Math.max(
+      ...model
+        .segments(candidate.tokens)
+        .map(
+          ({ start, length }) =>
+            candidate.tokens.slice(start, start + length).filter((token) => !isPunctuation(token)).length,
+        ),
+    ),
     rare: round(model.rareShare(candidate.tokens)),
     readability: round(readingEase(candidate.tokens)),
   }));

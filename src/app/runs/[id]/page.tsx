@@ -12,6 +12,16 @@ export default async function RunPage(props: PageProps<"/runs/[id]">) {
   if (!run) notFound();
 
   const { settings } = run;
+  const again = new URLSearchParams({
+    words: run.words.join(" "),
+    count: String(run.requested),
+    engine: run.engine,
+    creativity: String(Math.round(settings.creativity * 100)),
+    length: settings.length,
+    position: settings.position,
+    readability: settings.readability,
+    grammar: settings.grammar ? "on" : "off",
+  });
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-6 sm:py-10">
       <header className="flex flex-col gap-2">
@@ -28,6 +38,12 @@ export default async function RunPage(props: PageProps<"/runs/[id]">) {
           {settings.grammar ? "on" : "off"}
         </p>
       </header>
+      <Link
+        href={`/?${again}`}
+        className="self-start rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground"
+      >
+        Generate again with these settings
+      </Link>
       <RunView run={run} />
     </main>
   );

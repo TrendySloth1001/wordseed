@@ -19,7 +19,7 @@ export type SentenceMetrics = {
   words: number;
   /** under the Markov model, for both engines, so the two can be compared */
   perplexity: number;
-  /** longest stretch found word for word in the corpus */
+  /** words in the longest stretch found word for word in the corpus */
   copied: number;
   /** share of words that are rare in the corpus, 0 to 1 */
   rare: number;
