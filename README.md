@@ -1,11 +1,3 @@
-# wordseed
-
-Type a word, get as many sentences as you want. Two language models built from scratch, an n-gram model on a suffix array and a small LSTM, grow sentences around your word, then rank, filter and explain every one of them mathematically.
-
-<p>
-  <img src="https://skillicons.dev/icons?i=ts,nextjs,react,tailwind,nodejs,python,pytorch,latex&theme=dark" alt="TypeScript, Next.js, React, Tailwind CSS, Node.js, Python, PyTorch, LaTeX" />
-</p>
-
 ![TypeScript](https://img.shields.io/badge/TypeScript-000?style=for-the-badge&logo=typescript&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js_16-000?style=for-the-badge&logo=nextdotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React_19-000?style=for-the-badge&logo=react&logoColor=white)
@@ -16,6 +8,10 @@ Type a word, get as many sentences as you want. Two language models built from s
 ![Python](https://img.shields.io/badge/Python-000?style=for-the-badge&logo=python&logoColor=white)
 ![PyTorch](https://img.shields.io/badge/PyTorch-000?style=for-the-badge&logo=pytorch&logoColor=white)
 ![KaTeX](https://img.shields.io/badge/KaTeX-000?style=for-the-badge&logo=latex&logoColor=white)
+
+# wordseed
+
+Type a word, get as many sentences as you want. Two language models built from scratch, an n-gram model on a suffix array and a small LSTM, grow sentences around your word, then rank, filter and explain every one of them mathematically.
 
 ## Screenshots
 
