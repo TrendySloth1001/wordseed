@@ -11,6 +11,8 @@ import {
   GitBranchIcon,
   GitCompareIcon,
   HashtagIcon,
+  MinusSignIcon,
+  PlusSignIcon,
   Idea01Icon,
   Loading03Icon,
   Location01Icon,
@@ -359,32 +361,65 @@ export function Generator({ initial = {} }: { initial?: InitialSettings }) {
               htmlFor="count"
               hint={`Pick a preset or type any number from 1 to ${maxCount.toLocaleString("en")}.`}
             >
-              <div className="flex flex-wrap items-center gap-2">
-                <ToggleGroup
-                  type="single"
-                  variant="outline"
-                  size="lg"
-                  value={String(count)}
-                  onValueChange={(value) => value && setCountText(value)}
-                >
-                  {PRESETS.filter((preset) => preset <= maxCount).map((preset) => (
-                    <ToggleGroupItem key={preset} value={String(preset)} className={`h-10 px-3.5 ${SELECTED}`}>
-                      {preset}
-                    </ToggleGroupItem>
-                  ))}
-                </ToggleGroup>
-                <Input
-                  id="count"
-                  type="number"
-                  inputMode="numeric"
-                  min={1}
-                  max={maxCount}
-                  value={countText}
-                  onChange={(event) => setCountText(event.target.value)}
-                  onBlur={() => setCountText(String(count))}
-                  aria-label="Number of sentences"
-                  className="h-10 w-24 text-base md:text-base"
-                />
+              {/* One outlined bar, like the word bar: presets on the left, an exact
+                  number with − and + on the right. */}
+              <div className="flex flex-col gap-1.5 rounded-2xl border p-1.5 @md:flex-row @md:items-center">
+                <div className="grid flex-1 grid-cols-4 gap-1" role="radiogroup" aria-label="Preset counts">
+                  {PRESETS.filter((preset) => preset <= maxCount).map((preset) => {
+                    const selected = count === preset;
+                    return (
+                      <button
+                        key={preset}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        onClick={() => setCountText(String(preset))}
+                        className={`h-10 rounded-xl text-sm font-medium tabular-nums transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                          selected ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        }`}
+                      >
+                        {preset}
+                      </button>
+                    );
+                  })}
+                </div>
+                <span className="hidden h-6 w-px bg-border @md:block" aria-hidden />
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Fewer sentences"
+                    disabled={count <= 1}
+                    onClick={() => setCountText(String(Math.max(1, count - 1)))}
+                    className="size-10 rounded-xl"
+                  >
+                    <HugeiconsIcon icon={MinusSignIcon} strokeWidth={2} className="size-4" />
+                  </Button>
+                  <Input
+                    id="count"
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={maxCount}
+                    value={countText}
+                    onChange={(event) => setCountText(event.target.value)}
+                    onBlur={() => setCountText(String(count))}
+                    aria-label="Number of sentences"
+                    className="h-10 flex-1 [appearance:textfield] rounded-xl border-0 bg-muted/60 text-center text-base font-semibold tabular-nums shadow-none focus-visible:ring-2 @md:w-20 @md:flex-none md:text-base dark:bg-muted/40 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label="More sentences"
+                    disabled={count >= maxCount}
+                    onClick={() => setCountText(String(Math.min(maxCount, count + 1)))}
+                    className="size-10 rounded-xl"
+                  >
+                    <HugeiconsIcon icon={PlusSignIcon} strokeWidth={2} className="size-4" />
+                  </Button>
+                </div>
               </div>
             </Field>
 
