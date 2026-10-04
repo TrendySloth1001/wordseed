@@ -1,6 +1,9 @@
 import { rateSentence } from "@/lib/runs";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request, context: RouteContext<"/api/runs/[id]/ratings">) {
+  const limited = rateLimit(request, "rate");
+  if (limited) return limited;
   const { id } = await context.params;
   const body = await request.json().catch(() => null);
   const index = Number(body?.index);

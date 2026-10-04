@@ -1,12 +1,15 @@
 import { getModel, getNeuralModel } from "@/lib/corpus";
 import { explainTrace } from "@/lib/engine";
 import type { Run, Trace } from "@/lib/run-types";
+import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * Explains one sentence from its trace, sent by the browser. Used for runs the
  * browser keeps itself, which the server never saw saved.
  */
 export async function POST(request: Request) {
+  const limited = rateLimit(request, "explain");
+  if (limited) return limited;
   const body = await request.json().catch(() => null);
   const engine = body?.engine === "neural" ? "neural" : "markov";
   const trace = body?.trace as Trace | undefined;

@@ -743,6 +743,7 @@ for (let w = 0; w < V; w++)                    // tied output layer
                 <tr><td>src/lib/readability.ts</td><td>Syllables and Flesch reading ease</td></tr>
                 <tr><td>src/lib/word-forms.ts</td><td>Inflections and irregular forms</td></tr>
                 <tr><td>src/lib/runs.ts</td><td>Saved runs and ratings on the server</td></tr>
+                <tr><td>src/lib/rate-limit.ts</td><td>Per-visitor request limits for every API route</td></tr>
                 <tr><td>src/lib/offline/</td><td>Offline worker, browser run storage, service worker control</td></tr>
                 <tr><td>src/lib/corpus.ts</td><td>Loading and caching models, uploads, sources</td></tr>
                 <tr><td>src/lib/source-reader.ts</td><td>Paragraphs and phrase search for the reader</td></tr>

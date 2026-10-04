@@ -1,4 +1,5 @@
 import { loadNeuralFiles, offlineManifest, readSource } from "@/lib/corpus";
+import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * What a browser saves to run both models offline:
@@ -8,6 +9,8 @@ import { loadNeuralFiles, offlineManifest, readSource } from "@/lib/corpus";
  * On a read-only host the manifest points at static copies instead.
  */
 export async function GET(request: Request, context: RouteContext<"/api/offline/[part]">) {
+  const limited = rateLimit(request, "offline");
+  if (limited) return limited;
   const { part } = await context.params;
   switch (part) {
     case "manifest":

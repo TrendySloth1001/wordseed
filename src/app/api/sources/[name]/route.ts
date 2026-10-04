@@ -1,8 +1,11 @@
 import { readSource } from "@/lib/corpus";
 import { findPassage, paragraphs } from "@/lib/source-reader";
+import { rateLimit } from "@/lib/rate-limit";
 
 /** The paragraph of a source in which a phrase first occurs. */
 export async function GET(request: Request, context: RouteContext<"/api/sources/[name]">) {
+  const limited = rateLimit(request, "lookup");
+  if (limited) return limited;
   const { name } = await context.params;
   const find = new URL(request.url).searchParams.get("find")?.slice(0, 300) ?? "";
   const text = await readSource(decodeURIComponent(name));

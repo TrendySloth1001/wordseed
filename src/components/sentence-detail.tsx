@@ -47,23 +47,28 @@ function percent(value: number): string {
 
 export function SentenceDetail({ runId, index }: { runId: string; index: number }) {
   const [detail, setDetail] = useState<Detail | null>(null);
-  const [failed, setFailed] = useState(false);
+  // Why the breakdown could not be loaded, when it could not.
+  const [failed, setFailed] = useState<string | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
     apiFetch(`/api/runs/${runId}/sentences/${index}`)
-      .then((response) => (response.ok ? response.json() : Promise.reject()))
+      .then(async (response) => {
+        const data = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(data?.error);
+        return data;
+      })
       .then((data) => active && setDetail(data))
-      .catch(() => active && setFailed(true));
+      .catch((error: Error) =>
+        active && setFailed(error.message || "The breakdown for this sentence is no longer available."),
+      );
     return () => {
       active = false;
     };
   }, [runId, index]);
 
-  if (failed) {
-    return <p className="text-sm text-muted-foreground">The breakdown for this sentence is no longer available.</p>;
-  }
+  if (failed) return <p className="text-sm text-muted-foreground">{failed}</p>;
   if (!detail) return <Skeleton className="h-28 w-full" />;
 
   const token = selected === null ? null : detail.tokens[selected];

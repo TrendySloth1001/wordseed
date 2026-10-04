@@ -114,7 +114,8 @@ export function RunView({ run, onPickWord }: { run: Run; onPickWord?: (word: str
     }).catch(() => null);
     if (!response?.ok) {
       setRatings(previous);
-      toast.error("Could not save the rating");
+      const reason = await response?.json().then((data) => data?.error).catch(() => null);
+      toast.error("Could not save the rating", { description: reason ?? undefined });
     }
   }
 

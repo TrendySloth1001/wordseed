@@ -7,6 +7,7 @@ import {
   saveUpload,
 } from "@/lib/corpus";
 import { READ_ONLY } from "@/lib/deployment";
+import { rateLimit } from "@/lib/rate-limit";
 
 const UPLOADS_OFF = Response.json(
   { error: "Adding text is turned off on the hosted version. Run wordseed locally to train on your own text." },
@@ -24,11 +25,15 @@ async function summary() {
   };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const limited = rateLimit(request, "lookup");
+  if (limited) return limited;
   return Response.json(await summary());
 }
 
 export async function POST(request: Request) {
+  const limited = rateLimit(request, "upload");
+  if (limited) return limited;
   if (READ_ONLY) return UPLOADS_OFF.clone();
   const form = await request.formData().catch(() => null);
   const file = form?.get("file");
@@ -55,6 +60,8 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const limited = rateLimit(request, "upload");
+  if (limited) return limited;
   if (READ_ONLY) return UPLOADS_OFF.clone();
   const name = new URL(request.url).searchParams.get("name") ?? "";
   if (!(await deleteUpload(name))) {
