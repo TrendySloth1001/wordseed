@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { Engine, Run } from "@/lib/run-types";
+import { apiFetch, offlineChoice } from "@/lib/offline/client";
 
 /** "both" runs the two engines on the same request and compares them. */
 type Mode = Engine | "both";
@@ -128,7 +129,7 @@ export function Generator({ initial = {} }: { initial?: InitialSettings }) {
     try {
       const responses = await Promise.all(
         engines.map((each) =>
-          fetch("/api/generate", {
+          apiFetch("/api/generate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -154,7 +155,12 @@ export function Generator({ initial = {} }: { initial?: InitialSettings }) {
       }
       else setFailure(data[failed]);
     } catch {
-      setFailure({ error: "Could not reach the server. Is it still running?" });
+      setFailure({
+        error:
+          offlineChoice() === "granted"
+            ? "Could not generate offline. Reload once you are back online to refresh the saved copy."
+            : "Could not reach the server. To keep generating without a network, allow offline use when asked or on the Corpus page.",
+      });
     } finally {
       setLoading(false);
     }
@@ -192,7 +198,7 @@ export function Generator({ initial = {} }: { initial?: InitialSettings }) {
         // instead of squeezing it and cutting its content off.
         className={`@container flex w-full shrink-0 flex-col gap-6 *:shrink-0 lg:w-[28rem] lg:px-1 lg:py-10 xl:w-[34rem] ${
           split
-            ? "lg:sticky lg:top-14 lg:max-h-[calc(100dvh-3.5rem)] lg:overflow-y-auto lg:[scrollbar-width:thin]"
+            ? "lg:sticky lg:top-14 lg:max-h-[calc(100dvh-3.5rem)] lg:overflow-y-auto lg:[scrollbar-width:none] lg:[&::-webkit-scrollbar]:hidden"
             : ""
         }`}
       >
@@ -355,7 +361,10 @@ export function Generator({ initial = {} }: { initial?: InitialSettings }) {
                 showOptions ? "grid-rows-[1fr] opacity-100" : "-mt-5 grid-rows-[0fr] opacity-0"
               }`}
             >
-            <div id="options" inert={!showOptions} className="min-h-0 overflow-hidden">
+            {/* relative: the switch and slider render hidden, absolutely positioned
+                form inputs, which would otherwise escape the clipping and make the
+                page scroll even while the panel is closed. */}
+            <div id="options" inert={!showOptions} className="relative min-h-0 overflow-hidden">
             <div className="grid gap-5 p-0.5 @xl:grid-cols-2">
               <Field
                 icon={MODE_ICONS[engine]}
@@ -605,7 +614,7 @@ function TryWords({ onPick }: { onPick: (word: string) => void }) {
   const slot = useRef(0);
 
   const refill = useCallback(async () => {
-    const words: string[] = await fetch(`/api/words/random?count=40`)
+    const words: string[] = await apiFetch(`/api/words/random?count=40`)
       .then((response) => (response.ok ? response.json() : []))
       .catch(() => []);
     pool.current.push(...words);

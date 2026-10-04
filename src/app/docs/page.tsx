@@ -54,7 +54,7 @@ export default async function DocsPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-[90rem] flex-1 justify-center gap-10 px-4 py-6 sm:py-10">
-      <nav className="sticky top-20 hidden max-h-[calc(100dvh-6rem)] w-60 shrink-0 self-start overflow-y-auto lg:block" aria-label="Contents">
+      <nav className="sticky top-20 hidden max-h-[calc(100dvh-6rem)] w-60 shrink-0 self-start overflow-y-auto lg:block print:hidden" aria-label="Contents">
         <p className="mb-2 text-sm font-semibold">Contents</p>
         <ol className="flex flex-col gap-1 text-sm">
           {CONTENTS.map(([id, title], index) => (
@@ -76,7 +76,7 @@ export default async function DocsPage() {
             {n(stats.sentences)} sentences, {n(stats.tokens)} tokens and {n(stats.vocabulary)} distinct
             words.
           </p>
-          <details className="rounded-lg border px-4 py-2 lg:hidden">
+          <details className="rounded-lg border px-4 py-2 lg:hidden print:hidden">
             <summary className="cursor-pointer font-medium">Contents</summary>
             <ol className="mt-2 flex flex-col gap-1 text-sm">
               {CONTENTS.map(([id, title], index) => (

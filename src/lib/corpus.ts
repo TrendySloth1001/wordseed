@@ -64,11 +64,45 @@ export async function getModel(): Promise<SentenceModel> {
 export async function getNeuralModel(): Promise<NeuralModel | null> {
   const signature = await signatureOf([path.join(NEURAL_DIR, "model.bin")]);
   if (cache.neuralModel?.signature !== signature || cache.neuralModel.build !== NeuralModel) {
-    const value = NeuralModel.load(NEURAL_DIR);
+    const value = loadNeuralFiles().then((files) => files && NeuralModel.fromData(files.manifest, files.weights));
     cache.neuralModel = { signature, build: NeuralModel, value };
     value.catch(() => (cache.neuralModel = undefined));
   }
   return cache.neuralModel.value;
+}
+
+/** The neural model's files, or null when `npm run train:neural` has not been run. */
+export async function loadNeuralFiles(): Promise<{ manifest: unknown; weights: ArrayBuffer } | null> {
+  try {
+    const manifest = JSON.parse(await readFile(path.join(NEURAL_DIR, "model.json"), "utf8"));
+    const buffer = await readFile(path.join(NEURAL_DIR, "model.bin"));
+    const weights = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength) as ArrayBuffer;
+    return { manifest, weights };
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+/**
+ * What a browser needs to run both models offline. `version` changes whenever
+ * any of the files does, so the browser knows when its saved copy is stale.
+ */
+export async function offlineManifest() {
+  const sources = await listSources();
+  const neuralFiles = ["model.json", "model.bin"].map((file) => path.join(NEURAL_DIR, file));
+  const signature = await signatureOf([...(await corpusPaths()), ...neuralFiles]);
+  let hash = 0;
+  for (let i = 0; i < signature.length; i++) hash = (Math.imul(hash, 31) + signature.charCodeAt(i)) | 0;
+  const neuralBytes = (await Promise.all(neuralFiles.map((file) => stat(file).catch(() => null)))).map(
+    (info) => info?.size ?? 0,
+  );
+  return {
+    version: (hash >>> 0).toString(36),
+    sources,
+    neural: neuralBytes.every((bytes) => bytes > 0),
+    bytes: sources.reduce((sum, source) => sum + source.bytes, 0) + neuralBytes[0] + neuralBytes[1],
+  };
 }
 
 export async function listSources(): Promise<Source[]> {

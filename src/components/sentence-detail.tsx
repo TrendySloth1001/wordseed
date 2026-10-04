@@ -15,6 +15,7 @@ import { BarList } from "@/components/bars";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { SentenceDetail as Detail } from "@/lib/run-types";
 import { sourceTitle } from "@/lib/source-reader";
+import { apiFetch } from "@/lib/offline/client";
 
 const TAG_NAMES: Record<string, string> = {
   det: "determiner",
@@ -51,7 +52,7 @@ export function SentenceDetail({ runId, index }: { runId: string; index: number 
 
   useEffect(() => {
     let active = true;
-    fetch(`/api/runs/${runId}/sentences/${index}`)
+    apiFetch(`/api/runs/${runId}/sentences/${index}`)
       .then((response) => (response.ok ? response.json() : Promise.reject()))
       .then((data) => active && setDetail(data))
       .catch(() => active && setFailed(true));
@@ -186,7 +187,7 @@ function SegmentRow({ words, source }: { words: string[]; source: string | null 
   function toggle() {
     setOpen(!open);
     if (passage) return;
-    fetch(`/api/sources/${address}`)
+    apiFetch(`/api/sources/${address}`)
       .then((response) => (response.ok ? response.json() : "missing"))
       .catch(() => "missing")
       .then(setPassage);

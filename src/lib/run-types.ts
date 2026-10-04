@@ -69,6 +69,8 @@ export type Run = {
   stats: ModelStats;
   /** 1 liked, -1 disliked, keyed by sentence index */
   ratings: Record<number, 1 | -1>;
+  /** made in the browser while offline, so only this device has it */
+  offline?: boolean;
 };
 
 /** How one sentence was produced; kept on disk, never sent with the run. */

@@ -4,8 +4,6 @@
 //   pivot, words after it ..., <sep>, words before it in reverse ..., <end>
 // so, given only a seed word, it writes the rest of the sentence to the right
 // and then the beginning of the sentence right-to-left.
-import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { isTerminal, type Candidate, type Position } from "./text";
 
 const UNKNOWN = 1;
@@ -73,19 +71,9 @@ export class NeuralModel {
     }
   }
 
-  /** Loads the trained model, or returns null when it has not been trained. */
-  static async load(directory: string): Promise<NeuralModel | null> {
-    try {
-      const manifest: Manifest = JSON.parse(
-        await readFile(path.join(directory, "model.json"), "utf8"),
-      );
-      const buffer = await readFile(path.join(directory, "model.bin"));
-      const weights = new Float32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength / 4);
-      return new NeuralModel(manifest, weights.slice());
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
-      throw error;
-    }
+  /** Builds the model from its manifest (model.json) and weights (model.bin). */
+  static fromData(manifest: unknown, bytes: ArrayBuffer): NeuralModel {
+    return new NeuralModel(manifest as Manifest, new Float32Array(bytes.slice(0)));
   }
 
   has(word: string): boolean {

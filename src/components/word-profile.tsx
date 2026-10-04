@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { WordProfile as Profile } from "@/lib/sentence-model";
 import { sourceTitle } from "@/lib/source-reader";
+import { apiFetch } from "@/lib/offline/client";
 
 export function WordProfile({ word, onPickWord }: { word: string; onPickWord?: (word: string) => void }) {
   const [loaded, setLoaded] = useState<{ word: string; profile: Profile | null } | null>(null);
 
   useEffect(() => {
     let active = true;
-    fetch(`/api/word?word=${encodeURIComponent(word)}`)
+    apiFetch(`/api/word?word=${encodeURIComponent(word)}`)
       .then((response) => (response.ok ? response.json() : null))
       .catch(() => null)
       .then((profile) => active && setLoaded({ word, profile }));

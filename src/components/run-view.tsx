@@ -25,6 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Section, Tile, WordProfile } from "@/components/word-profile";
 import type { Funnel, Run } from "@/lib/run-types";
+import { apiFetch } from "@/lib/offline/client";
 
 const FUNNEL_LABELS: [keyof Funnel, string][] = [
   ["sampled", "Candidates sampled"],
@@ -102,7 +103,7 @@ export function RunView({ run, onPickWord }: { run: Run; onPickWord?: (word: str
     if (next === 0) delete updated[index];
     else updated[index] = next;
     setRatings(updated);
-    const response = await fetch(`/api/runs/${run.id}/ratings`, {
+    const response = await apiFetch(`/api/runs/${run.id}/ratings`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ index, rating: next }),

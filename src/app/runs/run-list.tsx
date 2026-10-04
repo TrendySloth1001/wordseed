@@ -14,6 +14,7 @@ import { engineName } from "@/components/run-view";
 import { DeleteButton } from "@/components/confirm-button";
 import { Tile } from "@/components/word-profile";
 import type { Engine, RunListItem } from "@/lib/run-types";
+import { apiFetch } from "@/lib/offline/client";
 
 const ENGINES: Engine[] = ["markov", "neural"];
 
@@ -21,7 +22,7 @@ export function RunList({ initial }: { initial: RunListItem[] }) {
   const [runs, setRuns] = useState(initial);
 
   async function remove(id: string) {
-    const response = await fetch(`/api/runs/${id}`, { method: "DELETE" }).catch(() => null);
+    const response = await apiFetch(`/api/runs/${id}`, { method: "DELETE" }).catch(() => null);
     if (!response?.ok) {
       toast.error("Could not delete that run");
       return;

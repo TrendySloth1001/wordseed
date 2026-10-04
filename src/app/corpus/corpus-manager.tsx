@@ -26,6 +26,7 @@ import { BarList, Histogram } from "@/components/bars";
 import { Section } from "@/components/word-profile";
 import type { CorpusStatistics } from "@/lib/sentence-model";
 import { sourceTitle } from "@/lib/source-reader";
+import { apiFetch } from "@/lib/offline/client";
 
 type Summary = {
   sources: { name: string; bytes: number; uploaded: boolean }[];
@@ -43,7 +44,7 @@ export function CorpusManager() {
   /** Runs a request against /api/corpus and shows the summary it returns. */
   async function request(url: string, init?: RequestInit): Promise<boolean> {
     try {
-      const response = await fetch(url, init);
+      const response = await apiFetch(url, init);
       const data = await response.json();
       if (!response.ok) {
         setError(data.error);
@@ -60,7 +61,7 @@ export function CorpusManager() {
 
   useEffect(() => {
     let active = true;
-    fetch("/api/corpus")
+    apiFetch("/api/corpus")
       .then((response) => response.json())
       .then((data) => active && setSummary(data))
       .catch(() => active && setError("Could not reach the server. Is it still running?"));

@@ -8,6 +8,21 @@ const nextConfig: NextConfig = {
   // ship with the server build.
   outputFileTracingIncludes: {
     "/api/*": ["./data/corpus/*.txt", "./data/neural/model.*"],
+    "/corpus/*": ["./data/corpus/*.txt"],
+    "/docs": ["./data/corpus/*.txt", "./data/neural/model.*"],
+  },
+  // The service worker must never be served from the HTTP cache, or browsers
+  // would keep running an old version of it.
+  async headers() {
+    return [
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Content-Type", value: "application/javascript; charset=utf-8" },
+        ],
+      },
+    ];
   },
 };
 
