@@ -43,7 +43,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { Engine, Run } from "@/lib/run-types";
 import { apiFetch, offlineChoice } from "@/lib/offline/client";
-import { GenerateIcon } from "@/components/animated-icons";
+import { GenerateIcon, QuillIcon } from "@/components/animated-icons";
 
 /** "both" runs the two engines on the same request and compares them. */
 type Mode = Engine | "both";
@@ -198,7 +198,9 @@ export function Generator({ initial = {} }: { initial?: InitialSettings }) {
         // instead of squeezing it and cutting its content off.
         className={`@container flex w-full shrink-0 flex-col gap-6 *:shrink-0 lg:w-[28rem] lg:px-1 lg:py-10 xl:w-[34rem] ${
           split
-            ? "lg:sticky lg:top-16 lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto lg:[scrollbar-width:none] lg:[&::-webkit-scrollbar]:hidden"
+            ? // When the panel is taller than the screen it scrolls on its own; its
+              // edges fade out instead of cutting the content off with a hard line.
+              "lg:sticky lg:top-16 lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto lg:[scrollbar-width:none] lg:[&::-webkit-scrollbar]:hidden lg:[mask-image:linear-gradient(to_bottom,transparent,black_2.5rem,black_calc(100%-2.5rem),transparent)]"
             : ""
         }`}
       >
@@ -233,48 +235,82 @@ export function Generator({ initial = {} }: { initial?: InitialSettings }) {
                       : "Type one word. Add a second or third, separated by spaces, to get all of them in each sentence."
               }
             >
-              <div className="flex flex-col gap-2 @xl:flex-row">
-                <div className="relative flex-1">
-                  <Input
-                    id="words"
-                    value={text}
-                    onChange={(event) => setText(event.target.value)}
-                    placeholder="e.g. river"
-                    aria-invalid={tooMany || Boolean(invalid)}
-                    autoComplete="off"
-                    autoCapitalize="none"
-                    autoFocus
-                    enterKeyHint="go"
-                    className="h-12 pr-11 text-base md:text-base"
-                  />
-                  {text !== "" && (
-                    <Button
-                      type="button"
-                      size="icon-lg"
-                      variant="ghost"
-                      aria-label="Clear the word"
-                      title="Clear"
-                      onClick={() => setText("")}
-                      className="absolute top-1.5 right-1.5"
-                    >
-                      <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} className="size-5" />
-                    </Button>
-                  )}
+              {/* One bar holding the input and the button. While it has focus, a
+                  thin light runs round its border (.word-bar in globals.css). */}
+              <div className="word-bar group rounded-2xl p-px">
+                <div className="flex flex-col gap-1.5 rounded-[calc(1rem-1px)] bg-background p-1.5 @xl:flex-row">
+                  <div className="relative flex flex-1 items-center">
+                    <QuillIcon className="pointer-events-none absolute left-3.5 size-5 text-muted-foreground transition-colors group-focus-within:text-foreground" />
+                    <Input
+                      id="words"
+                      value={text}
+                      onChange={(event) => setText(event.target.value)}
+                      placeholder="Type a word, e.g. river"
+                      aria-invalid={tooMany || Boolean(invalid)}
+                      autoComplete="off"
+                      autoCapitalize="none"
+                      autoFocus
+                      enterKeyHint="go"
+                      className="h-12 border-0 bg-transparent pr-24 pl-11 text-base shadow-none focus-visible:ring-0 md:text-base dark:bg-transparent"
+                    />
+                    {text !== "" ? (
+                      <Button
+                        type="button"
+                        size="icon-lg"
+                        variant="ghost"
+                        aria-label="Clear the word"
+                        title="Clear"
+                        onClick={() => setText("")}
+                        className="absolute right-1.5 animate-in fade-in zoom-in-75"
+                      >
+                        <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} className="size-5" />
+                      </Button>
+                    ) : (
+                      <kbd className="pointer-events-none absolute right-3 hidden items-center gap-1 rounded-md border px-1.5 py-0.5 font-mono text-[0.7rem] text-muted-foreground sm:flex">
+                        ↵ Enter
+                      </kbd>
+                    )}
+                  </div>
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={loading || words.length === 0 || tooMany || Boolean(invalid)}
+                    className="group h-12 rounded-xl px-5 text-base transition-all @xl:min-w-56 disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100"
+                  >
+                    {loading ? (
+                      <HugeiconsIcon icon={Loading03Icon} strokeWidth={2} className="size-5 animate-spin" />
+                    ) : (
+                      <GenerateIcon className="size-5" />
+                    )}
+                    {loading
+                      ? "Generating…"
+                      : words.length === 0
+                        ? "Type a word to start"
+                        : `Generate ${count} sentence${count === 1 ? "" : "s"}`}
+                  </Button>
                 </div>
-                <Button
-                  type="submit"
-                  size="lg"
-                  disabled={loading || words.length === 0 || tooMany || Boolean(invalid)}
-                  className="group h-12 px-5 text-base @xl:min-w-52"
-                >
-                  {loading ? (
-                    <HugeiconsIcon icon={Loading03Icon} strokeWidth={2} className="size-5 animate-spin" />
-                  ) : (
-                    <GenerateIcon className="size-5" />
-                  )}
-                  {loading ? "Generating…" : `Generate ${count} sentence${count === 1 ? "" : "s"}`}
-                </Button>
               </div>
+              {words.length > 0 && (
+                // The words every sentence will contain, as you type them.
+                <div className="flex flex-wrap items-center gap-1.5 text-xs" aria-hidden>
+                  {words.map((word, index) => (
+                    <span
+                      key={`${index}-${word}`}
+                      className={`inline-flex animate-in items-center gap-1.5 rounded-full border py-0.5 pr-2.5 pl-1 fade-in slide-in-from-left-1 ${
+                        index >= MAX_WORDS || word === invalid ? "border-dashed text-muted-foreground line-through" : ""
+                      }`}
+                    >
+                      <span className="flex size-4 items-center justify-center rounded-full border text-[0.6rem] tabular-nums">
+                        {index + 1}
+                      </span>
+                      {word}
+                    </span>
+                  ))}
+                  <span className="text-muted-foreground tabular-nums">
+                    {Math.min(words.length, MAX_WORDS)} of {MAX_WORDS} words
+                  </span>
+                </div>
+              )}
               {text === "" && (
                 <TryWords
                   onPick={(word) => {

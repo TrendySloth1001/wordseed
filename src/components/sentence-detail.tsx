@@ -6,7 +6,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Alert02Icon,
   ArrowDown01Icon,
-  ArrowUp01Icon,
+  Book02Icon,
   CheckmarkCircle02Icon,
   Layers01Icon,
   Route01Icon,
@@ -71,24 +71,35 @@ export function SentenceDetail({ runId, index }: { runId: string; index: number 
   return (
     <div className="flex flex-col gap-4 text-sm">
       <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap gap-x-1 gap-y-2">
+        {/* Plain words, no boxes. The bar under each word shows how much it
+            surprised the model (darker = more), the marker above shows where
+            the sentence started, and the line below is its part of speech. */}
+        <div className="flex flex-wrap gap-x-1 gap-y-3">
           {detail.tokens.map((entry, i) => {
-            const shade = surprise(entry.probability) * 60;
+            const level = surprise(entry.probability);
+            const seed = i === detail.seed;
             return (
               <button
                 key={i}
                 type="button"
                 onClick={() => setSelected(i === selected ? null : i)}
-                className="flex flex-col items-center gap-0.5 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-pressed={i === selected}
+                aria-label={`${entry.text}${seed ? ", where the sentence started" : ""}`}
+                className={`flex flex-col items-center gap-1 rounded-lg border px-1.5 pt-0.5 pb-1 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring ${
+                  i === selected ? "border-foreground" : "border-transparent hover:border-border"
+                }`}
               >
-                <span
-                  className={`rounded-md px-1.5 py-1 leading-5 ${shade > 32 ? "text-background" : "text-foreground"} ${
-                    i === detail.seed ? "border-2 border-foreground font-semibold" : "border border-border"
-                  } ${i === selected ? "ring-2 ring-foreground ring-offset-2 ring-offset-background" : ""}`}
-                  style={{ backgroundColor: `color-mix(in oklch, var(--foreground) ${shade}%, transparent)` }}
-                >
+                <span className="h-3 text-[0.55rem] leading-3 font-semibold tracking-widest text-muted-foreground uppercase">
+                  {seed ? "start" : ""}
+                </span>
+                <span className={`leading-5 ${seed ? "font-semibold underline decoration-2 underline-offset-4" : ""}`}>
                   {entry.text}
                 </span>
+                <span
+                  className="h-1 w-full min-w-3 rounded-full bg-foreground"
+                  style={{ opacity: entry.tag === "punct" ? 0 : 0.1 + level * 0.9 }}
+                  aria-hidden
+                />
                 <span className="text-[0.65rem] leading-3 text-muted-foreground">
                   {entry.tag === "punct" ? " " : entry.tag}
                 </span>
@@ -96,14 +107,22 @@ export function SentenceDetail({ runId, index }: { runId: string; index: number 
             );
           })}
         </div>
-        <p className="text-xs text-muted-foreground">
-          Tap any word to see how it was chosen. Darker words surprised the model more; the word
-          with the thick border is where the sentence started.
-        </p>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            expected
+            <span className="flex gap-0.5" aria-hidden>
+              {[0.1, 0.32, 0.55, 0.78, 1].map((opacity) => (
+                <span key={opacity} className="h-1 w-3 rounded-full bg-foreground" style={{ opacity }} />
+              ))}
+            </span>
+            surprising
+          </span>
+          <span>Tap a word to see how it was chosen.</span>
+        </div>
       </div>
 
       {token && (
-        <div className="flex flex-col gap-2 rounded-lg border p-3">
+        <div className="flex flex-col gap-2 rounded-xl border p-3">
           <p className="flex items-center gap-2 font-medium">
             <HugeiconsIcon icon={Route01Icon} strokeWidth={2} className="size-5 shrink-0" />
             <span>
@@ -135,7 +154,7 @@ export function SentenceDetail({ runId, index }: { runId: string; index: number 
           <HugeiconsIcon icon={Layers01Icon} strokeWidth={2} className="size-5" />
           Where the wording comes from
         </p>
-        <ul className="flex flex-col gap-1.5">
+        <ul className="divide-y overflow-hidden rounded-xl border">
           {detail.segments.map((segment) => (
             <SegmentRow
               key={segment.start}
@@ -145,8 +164,8 @@ export function SentenceDetail({ runId, index }: { runId: string; index: number 
           ))}
         </ul>
         <p className="text-xs text-muted-foreground">
-          Each line is a stretch that appears word for word in the text named beside it. Tap a
-          line to read the original passage.
+          Each line appears word for word in the book or article named beside it. Tap one to read
+          the original passage.
         </p>
       </div>
 
@@ -175,7 +194,7 @@ function SegmentRow({ words, source }: { words: string[]; source: string | null 
 
   if (!source) {
     return (
-      <li className="flex items-baseline justify-between gap-3 px-2 py-1">
+      <li className="flex items-baseline justify-between gap-3 px-3 py-2">
         <span className="min-w-0 break-words">{shown}</span>
         <span className="shrink-0 text-xs text-muted-foreground">not in the texts</span>
       </li>
@@ -198,21 +217,26 @@ function SegmentRow({ words, source }: { words: string[]; source: string | null 
   const to = passage && passage !== "missing" ? Math.min(passage.text.length, passage.end + 220) : 0;
 
   return (
-    <li className="rounded-lg border">
+    <li>
       <button
         type="button"
         onClick={toggle}
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left outline-none transition-colors hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
       >
         <span className="min-w-0 break-words">{shown}</span>
-        <span className="flex shrink-0 items-center gap-1 text-xs font-medium underline underline-offset-4">
-          {sourceTitle(source)}
-          <HugeiconsIcon icon={open ? ArrowUp01Icon : ArrowDown01Icon} strokeWidth={2} className="size-4" />
+        <span className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+          <HugeiconsIcon icon={Book02Icon} strokeWidth={2} className="size-4" />
+          <span className="max-w-32 truncate font-medium text-foreground sm:max-w-none">{sourceTitle(source)}</span>
+          <HugeiconsIcon
+            icon={ArrowDown01Icon}
+            strokeWidth={2}
+            className={`size-4 transition-transform ${open ? "rotate-180" : ""}`}
+          />
         </span>
       </button>
       {open && (
-        <div className="flex flex-col gap-2 border-t px-2 py-2">
+        <div className="flex flex-col gap-2 px-3 pb-3">
           {passage === null && <Skeleton className="h-16 w-full" />}
           {passage === "missing" && (
             <p className="text-muted-foreground">The exact passage could not be located in this text.</p>

@@ -542,3 +542,49 @@
     animation: none !important;
   }
 }
+
+/* The word bar on the Generate form: a plain border at rest; while focused, a
+   thin light runs round it and a soft halo appears. Black and white only. */
+@property --bar-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+.word-bar {
+  background: var(--border);
+  transition: box-shadow 0.3s ease-out;
+}
+.word-bar:hover {
+  background: color-mix(in oklab, var(--foreground) 25%, var(--border));
+}
+.word-bar:focus-within {
+  background: conic-gradient(
+    from var(--bar-angle),
+    var(--border) 0deg,
+    var(--foreground) 50deg,
+    var(--border) 110deg,
+    var(--border) 180deg,
+    color-mix(in oklab, var(--foreground) 60%, var(--border)) 230deg,
+    var(--border) 290deg
+  );
+  box-shadow: 0 0 0 4px color-mix(in oklab, var(--foreground) 7%, transparent);
+  animation: bar-spin 3s linear infinite;
+}
+@keyframes bar-spin {
+  to {
+    --bar-angle: 360deg;
+  }
+}
+/* Focusing the word bar also makes its quill write. */
+.word-bar:focus-within .ai-quill .ai-quill {
+  animation: ai-write 1s ease-in-out;
+}
+.word-bar:focus-within .ai-quill .ai-ink {
+  animation: ai-ink 1.4s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .word-bar:focus-within {
+    animation: none;
+    background: var(--foreground);
+  }
+}

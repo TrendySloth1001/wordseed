@@ -7,10 +7,14 @@ import {
   Analytics01Icon,
   ArrowDown01Icon,
   ArrowUp01Icon,
+  BookOpen01Icon,
   Copy01Icon,
   Csv01Icon,
+  DiamondIcon,
   InformationCircleIcon,
+  RulerIcon,
   Search01Icon,
+  ShuffleIcon,
   Sorting01Icon,
   TextAlignLeftIcon,
   ThumbsDownIcon,
@@ -23,7 +27,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Section, Tile, WordProfile } from "@/components/word-profile";
+import { Section, Tile, TileTable, WordProfile } from "@/components/word-profile";
 import type { Funnel, Run } from "@/lib/run-types";
 import { apiFetch } from "@/lib/offline/client";
 
@@ -274,28 +278,36 @@ export function RunView({ run, onPickWord }: { run: Run; onPickWord?: (word: str
                 </div>
                 {open === index && (
                   <div className="flex flex-col gap-4 border-t px-3 py-4 sm:px-4">
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <TileTable columns="grid-cols-2 sm:grid-cols-4">
                       <Tile
+                        bare
+                        icon={Analytics01Icon}
                         label="Perplexity"
                         value={String(sentence.perplexity)}
                         hint="lower means more natural"
                       />
                       <Tile
+                        bare
+                        icon={BookOpen01Icon}
                         label="Reading ease"
                         value={String(Math.round(sentence.readability))}
                         hint={easeLabel(sentence.readability)}
                       />
                       <Tile
+                        bare
+                        icon={Copy01Icon}
                         label="Longest copied run"
                         value={`${sentence.copied} words`}
                         hint="taken in a row from one text"
                       />
                       <Tile
+                        bare
+                        icon={DiamondIcon}
                         label="Rare words"
                         value={`${Math.round(sentence.rare * 100)}%`}
                         hint="of this sentence"
                       />
-                    </div>
+                    </TileTable>
                     <SentenceDetail runId={run.id} index={index} />
                   </div>
                 )}
@@ -314,30 +326,38 @@ export function RunView({ run, onPickWord }: { run: Run; onPickWord?: (word: str
         </TabsContent>
 
         <TabsContent value="summary" className="flex flex-col gap-5 pt-2">
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            <Tile label="Average length" value={`${summary.averageWords} words`} />
+          <TileTable columns="grid-cols-2 sm:grid-cols-3">
+            <Tile bare icon={RulerIcon} label="Average length" value={`${summary.averageWords} words`} />
             <Tile
+              bare
+              icon={Analytics01Icon}
               label="Average perplexity"
               value={String(summary.averagePerplexity)}
               hint="lower means more natural"
             />
             <Tile
+              bare
+              icon={BookOpen01Icon}
               label="Average reading ease"
               value={String(Math.round(summary.averageReadability))}
               hint={easeLabel(summary.averageReadability)}
             />
             <Tile
+              bare
+              icon={ShuffleIcon}
               label="Variety"
               value={`${Math.round(summary.diversity * 100)}%`}
               hint="different words out of all words"
             />
             <Tile
+              bare
+              icon={Copy01Icon}
               label="Average copied run"
               value={`${summary.averageCopied} words`}
               hint="taken in a row from one text"
             />
-            <Tile label="Your ratings" value={`${liked} good · ${disliked} bad`} />
-          </div>
+            <Tile bare icon={ThumbsUpIcon} label="Your ratings" value={`${liked} good · ${disliked} bad`} />
+          </TileTable>
           <Section title="How the sentences were picked">
             <BarList
               bars={FUNNEL_LABELS.filter(([key]) => summary.funnel[key] > 0 || key === "returned").map(

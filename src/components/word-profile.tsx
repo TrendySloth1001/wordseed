@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 import { BarList } from "@/components/bars";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -79,12 +80,42 @@ export function WordProfile({ word, onPickWord }: { word: string; onPickWord?: (
   );
 }
 
-export function Tile({ label, value, hint }: { label: string; value: string; hint?: string }) {
+/** A number with its name: transparent, outlined, with an optional icon (the docs' live-number style). */
+export function Tile({
+  label,
+  value,
+  hint,
+  icon,
+  bare,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  icon?: IconSvgElement;
+  /** inside a TileTable: no box of its own, just the dividers */
+  bare?: boolean;
+}) {
   return (
-    <div className="flex flex-col gap-0.5 rounded-lg border px-3 py-2">
-      <span className="text-lg font-semibold tabular-nums">{value}</span>
-      <span className="text-xs font-medium">{label}</span>
-      {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+    <div className={`flex flex-col gap-2 p-3 ${bare ? "border-r border-b" : "rounded-xl border"}`}>
+      {icon && <HugeiconsIcon icon={icon} strokeWidth={2} className="size-4 text-muted-foreground" />}
+      <span className="flex flex-col gap-0.5">
+        <span className="text-lg leading-tight font-semibold tracking-tight tabular-nums">{value}</span>
+        <span className="text-xs font-medium">{label}</span>
+        {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Tiles as one outlined table with thin dividers between the cells, like the
+ * source list in Explain. Each cell draws its right and bottom line; the grid
+ * is pulled out by a pixel so the outer ones hide under the table's border.
+ */
+export function TileTable({ columns, children }: { columns: string; children: React.ReactNode }) {
+  return (
+    <div className="overflow-hidden rounded-xl border">
+      <div className={`-mr-px -mb-px grid ${columns}`}>{children}</div>
     </div>
   );
 }
