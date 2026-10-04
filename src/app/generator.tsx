@@ -610,13 +610,56 @@ export function Generator({ initial = {} }: { initial?: InitialSettings }) {
               loading ? "opacity-50" : ""
             }`}
           >
-            {runs.length === 2 && <Comparison runs={runs} />}
-            {runs.map((run) => (
-              <RunView key={run.id} run={run} onPickWord={pickWord} />
-            ))}
+            {runs.length === 2 ? (
+              <>
+                <Comparison runs={runs} />
+                <SideBySide runs={runs} onPickWord={pickWord} />
+              </>
+            ) : (
+              runs.map((run) => <RunView key={run.id} run={run} onPickWord={pickWord} />)
+            )}
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * The two engines' sentences next to each other when there is room; on a
+ * narrower screen, one at a time with a switch between them.
+ */
+function SideBySide({ runs, onPickWord }: { runs: Run[]; onPickWord: (word: string) => void }) {
+  const [shown, setShown] = useState(runs[0].id);
+  return (
+    <div className="@container flex flex-col gap-4">
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        size="lg"
+        spacing={0}
+        value={shown}
+        onValueChange={(value) => value && setShown(value)}
+        className="w-full @2xl:hidden"
+      >
+        {runs.map((run) => (
+          <ToggleGroupItem
+            key={run.id}
+            value={run.id}
+            className="flex-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+          >
+            <HugeiconsIcon icon={MODE_ICONS[run.engine]} strokeWidth={2} className="size-4" />
+            {engineName(run)}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+      <div className="grid gap-6 @2xl:grid-cols-2 @2xl:gap-4">
+        {runs.map((run) => (
+          <div key={run.id} className={`min-w-0 ${run.id === shown ? "" : "hidden @2xl:block"}`}>
+            <RunView run={run} onPickWord={onPickWord} compact />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
