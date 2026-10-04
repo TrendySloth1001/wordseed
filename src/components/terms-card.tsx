@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Agreement02Icon, Alert02Icon, Shield01Icon, SparklesIcon } from "@hugeicons/core-free-icons";
+import { DocumentValidationIcon, Alert02Icon, Shield01Icon, SparklesIcon } from "@hugeicons/core-free-icons";
 import { GenerateIcon } from "@/components/animated-icons";
 import { Button } from "@/components/ui/button";
 
@@ -79,7 +79,7 @@ export function TermsCard({
       />
       <div className="flex items-center gap-3">
         <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-foreground/30">
-          <HugeiconsIcon icon={Agreement02Icon} strokeWidth={1.8} className="size-5" />
+          <HugeiconsIcon icon={DocumentValidationIcon} strokeWidth={1.8} className="size-5" />
         </span>
         <p id="terms-card-title" className="font-medium">
           Quick one before your first sentences

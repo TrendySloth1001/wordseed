@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
-  Agreement02Icon,
+  DocumentValidationIcon,
   Alert02Icon,
   CopyrightIcon,
   RefreshIcon,
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 export default function TermsPage() {
   return (
     <LegalPage
-      icon={Agreement02Icon}
+      icon={DocumentValidationIcon}
       title="Terms of use"
       intro="The short version: wordseed is a free student project for learning and fun. The sentences are written by a machine from old books and Wikipedia, so treat them as playful experiments, not facts."
       updated="4 October 2026"
