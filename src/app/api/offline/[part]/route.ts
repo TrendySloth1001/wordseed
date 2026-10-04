@@ -1,22 +1,22 @@
-import { listSources, loadNeuralFiles, offlineManifest, readSource } from "@/lib/corpus";
+import { loadNeuralFiles, offlineManifest, readSource } from "@/lib/corpus";
 
 /**
- * The files a browser saves to run both models offline:
- * - manifest: what there is and its version
- * - corpus:   every corpus text
- * - neural:   the LSTM's manifest (model.json)
- * - weights:  the LSTM's weights (model.bin)
+ * What a browser saves to run both models offline:
+ * - manifest:          what there is, where to get it, and its version
+ * - corpus?name=…:     one corpus text
+ * - neural, weights:   the LSTM's manifest (model.json) and weights (model.bin)
+ * On a read-only host the manifest points at static copies instead.
  */
-export async function GET(_request: Request, context: RouteContext<"/api/offline/[part]">) {
+export async function GET(request: Request, context: RouteContext<"/api/offline/[part]">) {
   const { part } = await context.params;
   switch (part) {
     case "manifest":
       return Response.json(await offlineManifest(), { headers: { "Cache-Control": "no-store" } });
     case "corpus": {
-      const sources = await listSources();
-      const names = sources.map((source) => source.name.replace(/\.txt$/, ""));
-      const texts = await Promise.all(names.map(async (name) => (await readSource(name)) ?? ""));
-      return Response.json({ sources, texts });
+      const name = new URL(request.url).searchParams.get("name") ?? "";
+      const text = name ? await readSource(name) : null;
+      if (text === null) return Response.json({ error: "No such source." }, { status: 404 });
+      return new Response(text, { headers: { "Content-Type": "text/plain; charset=utf-8" } });
     }
     case "neural":
     case "weights": {

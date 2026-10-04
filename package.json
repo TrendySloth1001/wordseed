@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "tsx --test tests/*.test.ts",
     "corpus": "node scripts/fetch-corpus.mjs && node scripts/fetch-wikipedia.mjs",
-    "train:neural": "tsx scripts/export-sentences.mts && python3 ml/train.py"
+    "train:neural": "tsx scripts/export-sentences.mts && python3 ml/train.py",
+    "prebuild": "node scripts/export-offline.mjs"
   },
   "dependencies": {
     "@hugeicons/core-free-icons": "^4.3.5",

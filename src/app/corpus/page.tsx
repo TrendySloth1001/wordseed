@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { READ_ONLY } from "@/lib/deployment";
 import { CorpusManager } from "./corpus-manager";
 
 export const metadata: Metadata = { title: "Corpus" };
@@ -9,11 +10,11 @@ export default function CorpusPage() {
       <header className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Corpus</h1>
         <p className="text-muted-foreground">
-          The text the models learn from. Add your own .txt file and the Markov model retrains on
-          it straight away, so its words become available.
+          The text the models learn from.
+          {!READ_ONLY && " Add your own .txt file and the Markov model retrains on it straight away, so its words become available."}
         </p>
       </header>
-      <CorpusManager />
+      <CorpusManager uploads={!READ_ONLY} />
     </main>
   );
 }

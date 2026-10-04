@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
   // The corpus and neural weights are read from disk at runtime, so they must
   // ship with the server build.
   outputFileTracingIncludes: {
-    "/api/*": ["./data/corpus/*.txt", "./data/neural/model.*"],
+    "/api/*": ["./data/corpus/*.txt", "./data/neural/model.*", "./data/offline-manifest.json"],
     "/corpus/*": ["./data/corpus/*.txt"],
     "/docs": ["./data/corpus/*.txt", "./data/neural/model.*"],
   },

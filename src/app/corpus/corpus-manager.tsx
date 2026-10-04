@@ -35,7 +35,7 @@ type Summary = {
   neural: { vocabulary: number; perplexity: number } | null;
 };
 
-export function CorpusManager() {
+export function CorpusManager({ uploads = true }: { uploads?: boolean }) {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -103,6 +103,7 @@ export function CorpusManager() {
         <Stat icon={TextFontIcon} label="Words" value={summary?.stats.vocabulary} />
       </div>
 
+      {uploads ? (
       <Card>
         <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-1">
@@ -140,6 +141,20 @@ export function CorpusManager() {
           </Button>
         </CardContent>
       </Card>
+      ) : (
+        <Card>
+          <CardContent className="flex flex-col gap-1">
+            <h2 className="flex items-center gap-2 font-medium">
+              <HugeiconsIcon icon={Upload01Icon} strokeWidth={2} className="size-5" />
+              Add your own text
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Turned off on this hosted version, which cannot keep files. Run wordseed on your own computer
+              to train it on your own .txt files.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardContent className="flex flex-col gap-1">

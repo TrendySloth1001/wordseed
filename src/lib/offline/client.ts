@@ -60,17 +60,14 @@ export async function saveForOffline(onProgress?: (progress: SaveProgress) => vo
   await askWorker({ method: "PING", path: "/" });
 }
 
-/** Removes the saved site and the runs made offline, and remembers the choice. */
+/** Removes the saved site (pages, scripts, models) and remembers the choice. */
 export async function removeOfflineCopy(): Promise<void> {
   setChoice("denied");
   const registrations = await navigator.serviceWorker?.getRegistrations?.() ?? [];
   await Promise.all(registrations.map((registration) => registration.unregister()));
   const names = await caches.keys();
   await Promise.all(names.filter((name) => name.startsWith("wordseed-")).map((name) => caches.delete(name)));
-  indexedDB.deleteDatabase("wordseed-offline");
-  try {
-    localStorage.removeItem(LOCAL_RUNS_KEY);
-  } catch {}
+  // Runs kept in this browser stay: they are History, not part of the copy.
 }
 
 export type SavedCopy = {
@@ -93,11 +90,12 @@ export async function savedCopy(): Promise<SavedCopy> {
   };
 }
 
-export function offlineRunCount(): number {
+/** Runs kept in this browser rather than on the server. */
+export function localRunCount(): number {
   return localRuns().size;
 }
 
-/** Ids of runs that were made in this browser, which the server does not know. */
+/** Ids of runs kept in this browser (made offline, or on a host without storage). */
 function localRuns(): Set<string> {
   try {
     return new Set(JSON.parse(localStorage.getItem(LOCAL_RUNS_KEY) ?? "[]"));
@@ -107,7 +105,14 @@ function localRuns(): Set<string> {
 }
 
 function rememberLocalRun(id: string) {
-  const ids = [...localRuns(), id].slice(-50);
+  writeLocalRuns([...localRuns(), id].slice(-50));
+}
+
+function forgetLocalRun(id: string) {
+  writeLocalRuns([...localRuns()].filter((other) => other !== id));
+}
+
+function writeLocalRuns(ids: string[]) {
   try {
     localStorage.setItem(LOCAL_RUNS_KEY, JSON.stringify(ids));
   } catch {}
@@ -143,15 +148,34 @@ async function answerOffline(path: string, init?: RequestInit): Promise<Response
 }
 
 /**
- * fetch() for the app's own API. Runs made offline are always answered by the
- * offline worker; anything else goes to the server first, and to the worker
- * only when the server cannot be reached and the visitor allowed offline use.
+ * Requests about a run kept in this browser. Ratings and deleting happen right
+ * here in IndexedDB; explaining a sentence asks the server (it has the models)
+ * with the sentence's trace, or the offline worker when there is no server.
  */
-export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
-  const run = path.match(/^\/api\/runs\/([a-z0-9]+)/)?.[1];
-  if (run && localRuns().has(run)) return answerOffline(path, init);
+async function answerLocalRun(id: string, path: string, init?: RequestInit): Promise<Response> {
+  const method = (init?.method ?? "GET").toUpperCase();
+  const body = typeof init?.body === "string" ? JSON.parse(init.body) : undefined;
+  const { deleteLocalRun, getLocalRun, rateLocalRun } = await import("./run-store");
+
+  if (method === "DELETE") {
+    await deleteLocalRun(id);
+    forgetLocalRun(id);
+    return Response.json({ ok: true });
+  }
+  if (method === "POST" && path.endsWith("/ratings")) {
+    const run = await rateLocalRun(id, Number(body?.index), body?.rating);
+    return run ? Response.json({ ratings: run.ratings }) : Response.json({ error: "That sentence no longer exists." }, { status: 404 });
+  }
+  const index = Number(path.match(/\/sentences\/(\d+)/)?.[1]);
+  const stored = await getLocalRun(id);
+  const trace = stored?.traces[index];
+  if (!stored || !trace) return Response.json({ error: "That sentence no longer exists." }, { status: 404 });
   try {
-    const response = await fetch(path, init);
+    const response = await fetch("/api/explain", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ engine: stored.run.engine, trace }),
+    });
     setServerReachable(true);
     return response;
   } catch (error) {
@@ -159,6 +183,37 @@ export async function apiFetch(path: string, init?: RequestInit): Promise<Respon
     if (offlineChoice() !== "granted") throw error;
     return answerOffline(path, init);
   }
+}
+
+/**
+ * fetch() for the app's own API. Runs kept in this browser are answered here;
+ * anything else goes to the server first, and to the offline worker only when
+ * the server cannot be reached and the visitor allowed offline use. When the
+ * server keeps no files, a new run comes back with its traces and is saved in
+ * this browser.
+ */
+export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
+  const run = path.match(/^\/api\/runs\/([a-z0-9]+)/)?.[1];
+  if (run && localRuns().has(run)) return answerLocalRun(run, path, init);
+  let response: Response;
+  try {
+    response = await fetch(path, init);
+    setServerReachable(true);
+  } catch (error) {
+    setServerReachable(false);
+    if (offlineChoice() !== "granted") throw error;
+    return answerOffline(path, init);
+  }
+  if (path === "/api/generate" && response.ok) {
+    const { traces, ...run } = await response.json();
+    if (traces) {
+      const { saveLocalRun } = await import("./run-store");
+      await saveLocalRun({ run, traces }).catch(() => {});
+      rememberLocalRun(run.id);
+    }
+    return Response.json(run, { status: response.status });
+  }
+  return response;
 }
 
 // The browser only knows whether this device has a network, not whether the

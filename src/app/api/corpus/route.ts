@@ -6,6 +6,12 @@ import {
   MAX_UPLOAD_BYTES,
   saveUpload,
 } from "@/lib/corpus";
+import { READ_ONLY } from "@/lib/deployment";
+
+const UPLOADS_OFF = Response.json(
+  { error: "Adding text is turned off on the hosted version. Run wordseed locally to train on your own text." },
+  { status: 403 },
+);
 
 /** The corpus files plus what both models learned from them. */
 async function summary() {
@@ -23,6 +29,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (READ_ONLY) return UPLOADS_OFF.clone();
   const form = await request.formData().catch(() => null);
   const file = form?.get("file");
   if (!(file instanceof File)) {
@@ -48,6 +55,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  if (READ_ONLY) return UPLOADS_OFF.clone();
   const name = new URL(request.url).searchParams.get("name") ?? "";
   if (!(await deleteUpload(name))) {
     return Response.json({ error: "No uploaded file with that name." }, { status: 404 });

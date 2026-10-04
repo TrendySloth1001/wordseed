@@ -44,3 +44,7 @@ next-env.d.ts
 /data/uploads/
 /data/neural/sentences.txt
 /data/runs/
+
+# static offline copies made before each build
+/public/offline/
+/data/offline-manifest.json

@@ -73,10 +73,12 @@ export type Run = {
   offline?: boolean;
 };
 
-/** How one sentence was produced; kept on disk, never sent with the run. */
+/** How one sentence was produced. Kept with the saved run (on the server, or in the browser on a host without storage) so the sentence can be explained later. */
 export type Trace = { tokens: string[]; seed: number; orders?: number[] };
 
 export type RunListItem = Pick<Run, "id" | "time" | "words" | "engine" | "settings"> & {
+  /** kept in this browser rather than on the server */
+  local?: boolean;
   sentences: number;
   liked: number;
   disliked: number;

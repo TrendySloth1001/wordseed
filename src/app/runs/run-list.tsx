@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -15,11 +15,27 @@ import { DeleteButton } from "@/components/confirm-button";
 import { Tile } from "@/components/word-profile";
 import type { Engine, RunListItem } from "@/lib/run-types";
 import { apiFetch } from "@/lib/offline/client";
+import { listLocalRuns } from "@/lib/offline/run-store";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const ENGINES: Engine[] = ["markov", "neural"];
 
+/** The server's saved runs plus the ones kept in this browser, newest first. */
 export function RunList({ initial }: { initial: RunListItem[] }) {
   const [runs, setRuns] = useState(initial);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    listLocalRuns()
+      .catch(() => [] as RunListItem[])
+      .then((local) => {
+        setRuns((server) => {
+          const known = new Set(server.map((run) => run.id));
+          return [...server, ...local.filter((run) => !known.has(run.id))].sort((a, b) => b.time.localeCompare(a.time));
+        });
+        setLoaded(true);
+      });
+  }, []);
 
   async function remove(id: string) {
     const response = await apiFetch(`/api/runs/${id}`, { method: "DELETE" }).catch(() => null);
@@ -29,6 +45,16 @@ export function RunList({ initial }: { initial: RunListItem[] }) {
     }
     setRuns((current) => current.filter((run) => run.id !== id));
     toast.success("Deleted");
+  }
+
+  if (runs.length === 0 && !loaded) {
+    return (
+      <div className="flex flex-col gap-2" aria-busy>
+        {Array.from({ length: 3 }, (_, index) => (
+          <Skeleton key={index} className="h-16 w-full" />
+        ))}
+      </div>
+    );
   }
 
   if (runs.length === 0) {
@@ -65,7 +91,7 @@ export function RunList({ initial }: { initial: RunListItem[] }) {
       <ul className="flex flex-col gap-2">
         {runs.map((run) => (
           <li key={run.id} className="flex items-center gap-1 rounded-lg border pr-1">
-            <Link href={`/runs/${run.id}`} className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3">
+            <Link href={run.local ? `/runs/local?id=${run.id}` : `/runs/${run.id}`} className="flex min-w-0 flex-1 items-center gap-3 px-3 py-3">
               <HugeiconsIcon
                 icon={run.engine === "markov" ? GitBranchIcon : AiBrain01Icon}
                 strokeWidth={2}

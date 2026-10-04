@@ -505,3 +505,40 @@
     transform: scale(1.25);
   }
 }
+
+/* "Try" words: departures-board letters, a hover wave, and the countdown ring. */
+@keyframes try-flap {
+  from {
+    opacity: 0.3;
+    transform: perspective(40px) rotateX(-75deg) translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes try-wave {
+  0%,
+  100% {
+    transform: none;
+  }
+  35% {
+    transform: translateY(-3px) scale(1.12);
+  }
+  65% {
+    transform: translateY(1px);
+  }
+}
+@keyframes try-countdown {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [class*="animate-[try-"] {
+    animation: none !important;
+  }
+}

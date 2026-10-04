@@ -13,6 +13,8 @@
 
 Type a word, get as many sentences as you want. Two language models built from scratch, an n-gram model on a suffix array and a small LSTM, grow sentences around your word, then rank, filter and explain every one of them mathematically.
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/TrendySloth1001/wordseed)
+
 ## Screenshots
 
 ![Generated sentences](docs/screenshots/results.png)

@@ -11,7 +11,8 @@ const PAGES = "wordseed-pages";
 const ASSETS = "wordseed-assets";
 const DATA = "wordseed-data";
 const META = "wordseed-meta";
-const MAIN_PAGES = ["/", "/runs", "/corpus", "/docs", "/offline"];
+// /runs/local shows any run kept in the browser, so one saved copy serves them all offline.
+const MAIN_PAGES = ["/", "/runs", "/runs/local", "/corpus", "/docs", "/offline"];
 const RESAVE_AFTER = 24 * 60 * 60 * 1000;
 
 self.addEventListener("install", () => self.skipWaiting());
@@ -50,10 +51,12 @@ async function save(force, post) {
   const sourcePages = manifest.sources.map(
     (source) => `/corpus/${encodeURIComponent(source.name.replace(/\.txt$/, ""))}`,
   );
+  // The corpus and models, from wherever the manifest says: static copies on
+  // a hosted site, the API locally. Either way the URLs carry the version.
   const data = [
     "/api/offline/manifest",
-    `/api/offline/corpus?v=${manifest.version}`,
-    ...(manifest.neural ? [`/api/offline/neural?v=${manifest.version}`, `/api/offline/weights?v=${manifest.version}`] : []),
+    ...manifest.sources.map((source) => source.url),
+    ...(manifest.neural ? [manifest.neural.meta, manifest.neural.weights] : []),
   ];
   const total = MAIN_PAGES.length + sourcePages.length + data.length + 1;
   let done = 0;
@@ -101,17 +104,19 @@ async function save(force, post) {
   }
   step();
 
-  // The corpus and models, under versioned URLs; older versions are dropped.
-  const dataCache = await caches.open(DATA);
+    const dataCache = await caches.open(DATA);
   for (const url of data) {
     const response = await fetch(url, { cache: "no-store" });
     if (!response.ok) throw new Error(`Could not save ${url} (${response.status}).`);
     await dataCache.put(url, response);
     step();
   }
+  // Drop corpus and model files from older versions.
+  const keep = new Set(data.map((url) => new URL(url, self.location.origin).href));
   for (const request of await dataCache.keys()) {
-    const url = new URL(request.url);
-    if (url.searchParams.has("v") && url.searchParams.get("v") !== manifest.version) await dataCache.delete(request);
+    const { pathname } = new URL(request.url);
+    const offlineFile = pathname.startsWith("/offline/") || (pathname.startsWith("/api/offline/") && pathname !== "/api/offline/manifest");
+    if (offlineFile && !keep.has(request.url)) await dataCache.delete(request);
   }
 
   await writeMeta({ version: manifest.version, savedAt: Date.now(), bytes: manifest.bytes });
@@ -134,7 +139,11 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.startsWith("/_next/webpack-hmr") || url.pathname.startsWith("/__nextjs")) return;
 
   if (request.mode === "navigate") event.respondWith(page(request, url));
-  else if (url.pathname.startsWith("/api/offline/") && url.pathname !== "/api/offline/manifest") {
+  else if (
+    url.pathname.startsWith("/offline/") ||
+    (url.pathname.startsWith("/api/offline/") && url.pathname !== "/api/offline/manifest")
+  ) {
+    // Versioned corpus and model files never change: the saved copy is enough.
     event.respondWith(cacheFirst(request, DATA));
   } else if (url.pathname.startsWith("/api/")) event.respondWith(networkFirst(request, DATA));
   else event.respondWith(networkFirst(request, ASSETS));

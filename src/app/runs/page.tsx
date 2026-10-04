@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
+import { READ_ONLY } from "@/lib/deployment";
 import { listRuns } from "@/lib/runs";
 import { RunList } from "./run-list";
 
@@ -13,7 +14,9 @@ export default async function RunsPage() {
       <header className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">History</h1>
         <p className="text-muted-foreground">
-          Every generation is saved here with its ratings. The 50 most recent are kept.
+          {READ_ONLY
+            ? "Every generation is saved in this browser with its ratings. The 50 most recent are kept."
+            : "Every generation is saved here with its ratings. The 50 most recent are kept."}
         </p>
       </header>
       <RunList initial={await listRuns()} />

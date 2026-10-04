@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import {
-  offlineRunCount,
+  localRunCount,
   offlineSupported,
   removeOfflineCopy,
   savedCopy,
@@ -157,7 +157,7 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenCh
             <Info label="Pages saved">{saved ? copy!.pages.toLocaleString("en") : "—"}</Info>
             <Info label="Scripts and styles">{saved ? copy!.assets.toLocaleString("en") : "—"}</Info>
             <Info label="Storage used">{usage !== null ? megabytes(usage) : "—"}</Info>
-            <Info label="Runs made offline">{supported ? offlineRunCount().toLocaleString("en") : "—"}</Info>
+            <Info label="Runs kept in this browser">{supported ? localRunCount().toLocaleString("en") : "—"}</Info>
           </dl>
 
           <div className="flex flex-wrap gap-2">

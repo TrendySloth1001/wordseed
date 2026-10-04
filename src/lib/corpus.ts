@@ -1,5 +1,6 @@
 import { mkdir, readdir, readFile, stat, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { READ_ONLY } from "./deployment";
 import { NeuralModel } from "./neural-model";
 import { SentenceModel } from "./sentence-model";
 
@@ -84,23 +85,43 @@ export async function loadNeuralFiles(): Promise<{ manifest: unknown; weights: A
   }
 }
 
+export type OfflineManifest = {
+  version: string;
+  sources: (Source & { url: string })[];
+  neural: { meta: string; weights: string } | null;
+  bytes: number;
+};
+
 /**
- * What a browser needs to run both models offline. `version` changes whenever
- * any of the files does, so the browser knows when its saved copy is stale.
+ * What a browser downloads to run both models offline, and where from.
+ * `version` changes whenever any of the files does, so the browser knows when
+ * its saved copy is stale. On a read-only host the files are the static copies
+ * made before the build (scripts/export-offline.mjs); elsewhere the API serves
+ * them, uploads included.
  */
-export async function offlineManifest() {
+export async function offlineManifest(): Promise<OfflineManifest> {
+  if (READ_ONLY) {
+    const exported = await readFile(path.join(process.cwd(), "data", "offline-manifest.json"), "utf8").catch(() => null);
+    if (exported) return JSON.parse(exported);
+  }
   const sources = await listSources();
   const neuralFiles = ["model.json", "model.bin"].map((file) => path.join(NEURAL_DIR, file));
   const signature = await signatureOf([...(await corpusPaths()), ...neuralFiles]);
   let hash = 0;
   for (let i = 0; i < signature.length; i++) hash = (Math.imul(hash, 31) + signature.charCodeAt(i)) | 0;
+  const version = (hash >>> 0).toString(36);
   const neuralBytes = (await Promise.all(neuralFiles.map((file) => stat(file).catch(() => null)))).map(
     (info) => info?.size ?? 0,
   );
   return {
-    version: (hash >>> 0).toString(36),
-    sources,
-    neural: neuralBytes.every((bytes) => bytes > 0),
+    version,
+    sources: sources.map((source) => ({
+      ...source,
+      url: `/api/offline/corpus?name=${encodeURIComponent(source.name.replace(/\.txt$/, ""))}&v=${version}`,
+    })),
+    neural: neuralBytes.every((bytes) => bytes > 0)
+      ? { meta: `/api/offline/neural?v=${version}`, weights: `/api/offline/weights?v=${version}` }
+      : null,
     bytes: sources.reduce((sum, source) => sum + source.bytes, 0) + neuralBytes[0] + neuralBytes[1],
   };
 }

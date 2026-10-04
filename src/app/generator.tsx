@@ -600,7 +600,7 @@ const LENGTH_HINTS: Record<string, string> = {
 };
 
 const VISIBLE_WORDS = 4;
-const ROTATE_EVERY = 1800;
+const ROTATE_EVERY = 2400;
 
 /**
  * Suggested words that keep changing: every couple of seconds one of them is
@@ -610,6 +610,9 @@ const ROTATE_EVERY = 1800;
 function TryWords({ onPick }: { onPick: (word: string) => void }) {
   const [shown, setShown] = useState(EXAMPLES);
   const [paused, setPaused] = useState(false);
+  // Bumped on every swap: restarts the countdown ring and the shuffle spin.
+  const [tick, setTick] = useState(0);
+  const [spins, setSpins] = useState(0);
   const pool = useRef<string[]>([]);
   const slot = useRef(0);
 
@@ -637,6 +640,7 @@ function TryWords({ onPick }: { onPick: (word: string) => void }) {
   const show = useCallback((words: string[]) => {
     current.current = words;
     setShown(words);
+    setTick((value) => value + 1);
   }, []);
 
   useEffect(() => {
@@ -657,6 +661,7 @@ function TryWords({ onPick }: { onPick: (word: string) => void }) {
     for (let i = 0; i < VISIBLE_WORDS; i++) {
       fresh.push(take([...current.current, ...fresh]) ?? current.current[i]);
     }
+    setSpins((value) => value + 1);
     show(fresh);
   }
 
@@ -671,15 +676,17 @@ function TryWords({ onPick }: { onPick: (word: string) => void }) {
       Try
       {shown.map((word, index) => (
         <Button
-          // A new word gets a new key, so it mounts and plays its entrance.
-          key={`${index}-${word}`}
+          key={index}
           type="button"
           variant="outline"
           onClick={() => onPick(word)}
-          className="animate-in duration-500 ease-out fill-mode-both fade-in slide-in-from-bottom-2 zoom-in-95 motion-reduce:animate-none"
-          style={{ animationDelay: `${index * 60}ms` }}
+          aria-label={word}
+          // Monospaced, so the chip's width follows the word's length and can
+          // ease from one word to the next.
+          style={{ width: `calc(${word.length}ch + 1.5rem)` }}
+          className="group/chip justify-center overflow-hidden px-0 font-mono text-[0.8rem] transition-[width,transform,background-color] duration-300 ease-out hover:-translate-y-0.5 active:scale-95"
         >
-          {word}
+          <ScrambleWord word={word} delay={index * 90} />
         </Button>
       ))}
       <Button
@@ -689,10 +696,102 @@ function TryWords({ onPick }: { onPick: (word: string) => void }) {
         aria-label="Show other words"
         title="Show other words"
         onClick={shuffle}
+        className="relative"
       >
-        <HugeiconsIcon icon={ShuffleIcon} strokeWidth={2} className="size-4" />
+        {/* Counts down to the next swap; frozen while the row is hovered. */}
+        <svg viewBox="0 0 36 36" className="absolute inset-0 size-full -rotate-90" aria-hidden>
+          <circle cx="18" cy="18" r="16" fill="none" className="stroke-border" strokeWidth="2" />
+          <circle
+            key={tick}
+            cx="18"
+            cy="18"
+            r="16"
+            fill="none"
+            pathLength={1}
+            strokeDasharray="1"
+            className="stroke-foreground motion-reduce:hidden"
+            strokeWidth="2"
+            strokeLinecap="round"
+            style={{
+              animation: `try-countdown ${ROTATE_EVERY}ms linear both`,
+              animationPlayState: paused ? "paused" : "running",
+            }}
+          />
+        </svg>
+        <HugeiconsIcon
+          icon={ShuffleIcon}
+          strokeWidth={2}
+          className="size-4 transition-transform duration-500 ease-out"
+          style={{ transform: `rotate(${spins * 180}deg)` }}
+        />
       </Button>
     </div>
+  );
+}
+
+const GLYPHS = "abcdefghijklmnopqrstuvwxyz";
+
+/**
+ * A word that arrives like a departures board: each letter flips through
+ * random letters and lands, left to right. Hovering its chip ripples the
+ * letters in a wave.
+ */
+function ScrambleWord({ word, delay = 0 }: { word: string; delay?: number }) {
+  const [letters, setLetters] = useState(() => word.split("").map((char) => ({ char, done: true })));
+
+  useEffect(() => {
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let frame = 0;
+    let last = -Infinity;
+    const start = performance.now();
+    const step = (now: number) => {
+      if (reduced) {
+        setLetters(word.split("").map((char) => ({ char, done: true })));
+        return;
+      }
+      // Change the random letters about 25 times a second, not every frame.
+      if (now - last < 40) {
+        frame = requestAnimationFrame(step);
+        return;
+      }
+      last = now;
+      const elapsed = now - start;
+      let settled = true;
+      // The new word's length applies at once (so the chip resizes around
+      // scrambling letters, never the old word); only the landing is staggered.
+      setLetters(
+        word.split("").map((char, i) => {
+          if (char === " " || elapsed >= delay + 140 + i * 55) return { char, done: true };
+          settled = false;
+          return { char: GLYPHS[Math.floor(Math.random() * GLYPHS.length)], done: false };
+        }),
+      );
+      if (!settled) frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [word, delay]);
+
+  return (
+    <span aria-hidden className="flex whitespace-pre">
+      {letters.map((letter, i) => (
+        // Outer span: the hover wave. Inner span: the flip on every change.
+        <span
+          key={i}
+          className="inline-block group-hover/chip:animate-[try-wave_0.55s_ease-in-out]"
+          style={{ animationDelay: `${i * 40}ms` }}
+        >
+          <span
+            key={letter.char + letter.done}
+            className={`inline-block animate-[try-flap_0.12s_ease-out] ${
+              letter.done ? "text-foreground" : "text-muted-foreground"
+            }`}
+          >
+            {letter.char}
+          </span>
+        </span>
+      ))}
+    </span>
   );
 }
 
