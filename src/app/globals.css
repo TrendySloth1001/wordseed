@@ -791,3 +791,46 @@
 .offline-saved .ai-tick {
   animation: ai-draw 0.6s 0.1s ease-out both;
 }
+
+/* Shuffle ("Try" words): the arrows redraw themselves on every swap and on hover. */
+.ai .ai-shuffle-a,
+.ai .ai-shuffle-b {
+  stroke-dasharray: 1;
+  animation: ai-shuffle 0.7s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+.ai .ai-shuffle-b {
+  animation-delay: 0.12s;
+}
+.group:hover .ai-shuffle .ai-shuffle-a,
+.group:hover .ai-shuffle .ai-shuffle-b {
+  animation-name: ai-shuffle-hover;
+}
+@keyframes ai-shuffle {
+  0% {
+    stroke-dashoffset: 1;
+    transform: translateX(-1px);
+  }
+  75% {
+    stroke-dashoffset: 0;
+    transform: translateX(1px);
+  }
+  100% {
+    stroke-dashoffset: 0;
+    transform: none;
+  }
+}
+/* Same motion under another name, so hovering replays it. */
+@keyframes ai-shuffle-hover {
+  0% {
+    stroke-dashoffset: 1;
+    transform: translateX(-1px);
+  }
+  75% {
+    stroke-dashoffset: 0;
+    transform: translateX(1px);
+  }
+  100% {
+    stroke-dashoffset: 0;
+    transform: none;
+  }
+}

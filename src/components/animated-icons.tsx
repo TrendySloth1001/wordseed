@@ -199,3 +199,25 @@ export function CookieIcon(props: IconProps) {
     </Svg>
   );
 }
+
+/**
+ * Shuffle: the two crossing arrows draw themselves from tail to head, one after
+ * the other, then nudge forward. Plays when it mounts (give it a new key to
+ * replay) and on hover.
+ */
+export function ShuffleIcon(props: IconProps) {
+  return (
+    <Svg name="shuffle" {...props}>
+      <path
+        className="ai-part ai-shuffle-a"
+        pathLength={1}
+        d="M3 18H4.58082C6.50873 18 7.47269 18 8.2862 17.5267C9.00708 17.1073 9.50904 16.3748 10.3582 15M14.0392 9C14.8883 7.62517 15.3903 6.89272 16.1111 6.4733C17.2771 5.79493 18.7956 6 20.0649 6C20.632 6 20.9155 6 20.9861 5.81481C21.0566 5.62961 20.8561 5.41165 20.4551 4.97574L19.5576 4"
+      />
+      <path
+        className="ai-part ai-shuffle-b"
+        pathLength={1}
+        d="M3 6H4.58082C6.50873 6 7.47269 6 8.2862 6.4733C9.0997 6.9466 9.63441 7.81853 10.7038 9.5624L13.6935 14.4376C14.7629 16.1815 15.2976 17.0534 16.1111 17.5267C17.2771 18.2051 18.7956 18 20.0649 18C20.632 18 20.9155 18 20.9861 18.1852C21.0566 18.3704 20.8561 18.5883 20.4551 19.0243L19.5576 20"
+      />
+    </Svg>
+  );
+}

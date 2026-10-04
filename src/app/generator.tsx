@@ -17,7 +17,6 @@ import {
   Loading03Icon,
   Location01Icon,
   RulerIcon,
-  ShuffleIcon,
   SlidersHorizontalIcon,
   SpellCheckIcon,
   TextAlignCenterIcon,
@@ -45,7 +44,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { Engine, Run } from "@/lib/run-types";
 import { apiFetch, offlineChoice } from "@/lib/offline/client";
-import { GenerateIcon, QuillIcon } from "@/components/animated-icons";
+import { GenerateIcon, QuillIcon, ShuffleIcon } from "@/components/animated-icons";
 import { acceptTerms, termsAccepted } from "@/lib/consent";
 import { TermsCard } from "@/components/terms-card";
 
@@ -708,9 +707,8 @@ const ROTATE_EVERY = 2400;
 function TryWords({ onPick }: { onPick: (word: string) => void }) {
   const [shown, setShown] = useState(EXAMPLES);
   const [paused, setPaused] = useState(false);
-  // Bumped on every swap: restarts the countdown ring and the shuffle spin.
+  // Bumped on every swap: restarts the countdown ring and the shuffle icon.
   const [tick, setTick] = useState(0);
-  const [spins, setSpins] = useState(0);
   const pool = useRef<string[]>([]);
   const slot = useRef(0);
 
@@ -759,7 +757,6 @@ function TryWords({ onPick }: { onPick: (word: string) => void }) {
     for (let i = 0; i < VISIBLE_WORDS; i++) {
       fresh.push(take([...current.current, ...fresh]) ?? current.current[i]);
     }
-    setSpins((value) => value + 1);
     show(fresh);
   }
 
@@ -794,7 +791,7 @@ function TryWords({ onPick }: { onPick: (word: string) => void }) {
         aria-label="Show other words"
         title="Show other words"
         onClick={shuffle}
-        className="relative"
+        className="group relative"
       >
         {/* Counts down to the next swap; frozen while the row is hovered. */}
         <svg viewBox="0 0 36 36" className="absolute inset-0 size-full -rotate-90" aria-hidden>
@@ -816,12 +813,8 @@ function TryWords({ onPick }: { onPick: (word: string) => void }) {
             }}
           />
         </svg>
-        <HugeiconsIcon
-          icon={ShuffleIcon}
-          strokeWidth={2}
-          className="size-4 transition-transform duration-500 ease-out"
-          style={{ transform: `rotate(${spins * 180}deg)` }}
-        />
+        {/* A new key on every swap replays the arrows drawing themselves. */}
+        <ShuffleIcon key={tick} className="size-4" />
       </Button>
     </div>
   );
