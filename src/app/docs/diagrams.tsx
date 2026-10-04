@@ -1,39 +1,64 @@
 // Diagrams and charts for the documentation page, drawn in the page's own ink
 // so they follow light and dark mode.
-import { HugeiconsIcon } from "@hugeicons/react";
-import { ArrowDown01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
+import {
+  Analytics01Icon,
+  ArrowDown01Icon,
+  ArrowRight01Icon,
+  Books01Icon,
+  DiceIcon,
+  FilterHorizontalIcon,
+  NeuralNetworkIcon,
+  RankingIcon,
+  ScissorIcon,
+  SparklesIcon,
+} from "@hugeicons/core-free-icons";
 import { Chip, Figure } from "./parts";
 
-const STEPS = [
-  ["Corpus", "17 novels and Simple English Wikipedia, as plain text"],
-  ["Tokeniser", "Splits text into sentences and tokens"],
-  ["Models", "A suffix-array n-gram model and an LSTM network"],
-  ["Sampling", "Grows many candidate sentences around your word"],
-  ["Filters", "Length, position, novelty, grammar, reading level"],
-  ["Ranking", "Keeps the candidates the model finds most probable"],
-  ["Analysis", "Probabilities, sources and statistics for each sentence"],
+const STEPS: [string, string, IconSvgElement][] = [
+  ["Corpus", "17 novels and Simple English Wikipedia, as plain text", Books01Icon],
+  ["Tokeniser", "Splits text into sentences and tokens", ScissorIcon],
+  ["Models", "A suffix-array n-gram model and an LSTM network", NeuralNetworkIcon],
+  ["Sampling", "Grows many candidate sentences around your word", DiceIcon],
+  ["Filters", "Length, position, novelty, grammar, reading level", FilterHorizontalIcon],
+  ["Ranking", "Keeps the candidates the model finds most probable", RankingIcon],
+  ["Analysis", "Probabilities, sources and statistics for each sentence", Analytics01Icon],
 ];
 
 export function Pipeline() {
   return (
     <Figure caption="The path from raw text to the sentences on your screen.">
-      <ol className="flex flex-col items-stretch gap-1 lg:flex-row lg:flex-wrap lg:items-center lg:gap-y-3">
-        {STEPS.map(([name, detail], index) => (
-          <li key={name} className="flex flex-col items-center gap-1 lg:flex-row">
-            <div className="flex w-full flex-col rounded-lg border px-3 py-2 lg:w-32">
-              <span className="text-sm font-semibold">
-                {index + 1}. {name}
+      <ol className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {STEPS.map(([name, detail, icon], index) => (
+          <li key={name} className="relative flex flex-col gap-2 rounded-xl border p-3">
+            <span className="flex items-center justify-between">
+              <span className="flex size-9 items-center justify-center rounded-lg border border-foreground/30">
+                <HugeiconsIcon icon={icon} strokeWidth={2} className="size-[18px]" />
               </span>
-              <span className="text-xs text-muted-foreground">{detail}</span>
-            </div>
-            {index < STEPS.length - 1 && (
-              <>
-                <HugeiconsIcon icon={ArrowDown01Icon} strokeWidth={2} className="size-4 lg:hidden" />
-                <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} className="size-4 max-lg:hidden" />
-              </>
-            )}
+              <span className="text-xs font-semibold text-muted-foreground tabular-nums">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+            </span>
+            <span className="text-sm font-semibold">{name}</span>
+            <span className="text-xs leading-5 text-muted-foreground">{detail}</span>
+            {/* Where the next step is: below on one column, to the right on more. */}
+            <HugeiconsIcon
+              icon={ArrowDown01Icon}
+              strokeWidth={2}
+              className="absolute -bottom-3 left-1/2 size-5 -translate-x-1/2 rounded-full border bg-background p-0.5 sm:hidden"
+            />
+            <HugeiconsIcon
+              icon={ArrowRight01Icon}
+              strokeWidth={2}
+              className="absolute top-1/2 -right-3 z-10 hidden size-5 -translate-y-1/2 rounded-full border bg-background p-0.5 sm:block sm:[li:nth-child(2n)_&]:hidden lg:[li:nth-child(2n)_&]:block lg:[li:nth-child(4n)_&]:hidden"
+            />
           </li>
         ))}
+        <li className="flex flex-col justify-center gap-2 rounded-xl border-2 border-foreground p-3">
+          <HugeiconsIcon icon={SparklesIcon} strokeWidth={2} className="size-6" />
+          <span className="text-sm font-semibold">Your sentences</span>
+          <span className="text-xs leading-5 text-muted-foreground">Ranked, explained and ready to copy or export</span>
+        </li>
       </ol>
     </Figure>
   );

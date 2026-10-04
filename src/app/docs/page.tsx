@@ -7,27 +7,24 @@ import { Growth, Pipeline, Pivot, SuffixArray, Temperature, Zipf } from "./diagr
 import lstmCell from "./images/lstm-cell.png";
 import markovChain from "./images/markov-chain.png";
 import rnnUnfolded from "./images/rnn-unfolded.png";
-import { Code, InCode, Section, Sub, Tex, WebFigure } from "./parts";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  BookOpen01Icon,
+  Clock01Icon,
+  NeuralNetworkIcon,
+  ParagraphIcon,
+  TextFontIcon,
+  TextIcon,
+} from "@hugeicons/core-free-icons";
+import { CONTENTS } from "./contents";
+import { handwriting, reading } from "./fonts";
+import { Code, InCode, Section, Sub, Tex, Thought, WebFigure } from "./parts";
+import { JumpGrid, Toc } from "./toc";
 
 export const metadata: Metadata = {
   title: "How it works",
   description: "The mathematics and the code behind the sentence generator.",
 };
-
-const CONTENTS = [
-  ["overview", "The idea in one picture"],
-  ["tokens", "From text to tokens"],
-  ["language-models", "Language models"],
-  ["suffix-array", "Counting fast: the suffix array"],
-  ["generation", "Growing a sentence"],
-  ["scoring", "Scoring and ranking"],
-  ["neural", "The neural model"],
-  ["filters", "Filters"],
-  ["analysis", "The analysis numbers"],
-  ["zipf", "Zipf's law in this corpus"],
-  ["code", "How a request flows through the code"],
-  ["references", "References"],
-];
 
 const CC_BY_SA_4 = "https://creativecommons.org/licenses/by-sa/4.0/";
 const CC_BY_SA_3 = "https://creativecommons.org/licenses/by-sa/3.0/";
@@ -53,69 +50,165 @@ export default async function DocsPage() {
   const n = (value: number) => value.toLocaleString("en");
 
   return (
-    <main className="mx-auto flex w-full max-w-[90rem] flex-1 justify-center gap-10 px-4 py-6 sm:py-10">
-      <nav className="sticky top-20 hidden max-h-[calc(100dvh-6rem)] w-60 shrink-0 self-start overflow-y-auto lg:block print:hidden" aria-label="Contents">
-        <p className="mb-2 text-sm font-semibold">Contents</p>
-        <ol className="flex flex-col gap-1 text-sm">
-          {CONTENTS.map(([id, title], index) => (
-            <li key={id}>
-              <a href={`#${id}`} className="block rounded-md px-2 py-1 text-muted-foreground hover:bg-muted hover:text-foreground">
-                {index + 1}. {title}
-              </a>
-            </li>
-          ))}
-        </ol>
-      </nav>
+    <main
+      className={`${reading.variable} ${handwriting.variable} mx-auto flex w-full max-w-[90rem] flex-1 justify-center gap-8 px-4 py-6 sm:py-10`}
+    >
+      <Toc />
 
-      <article className="flex min-w-0 max-w-3xl flex-1 flex-col gap-10 leading-7">
-        <header className="flex flex-col gap-3">
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">How it works</h1>
-          <p className="text-lg text-muted-foreground">
-            The mathematics behind each step of the sentence generator, and where each step lives in
-            the code. Numbers marked <em>live</em> are computed from the corpus as it is right now:{" "}
-            {n(stats.sentences)} sentences, {n(stats.tokens)} tokens and {n(stats.vocabulary)} distinct
-            words.
-          </p>
-          <details className="rounded-lg border px-4 py-2 lg:hidden print:hidden">
-            <summary className="cursor-pointer font-medium">Contents</summary>
-            <ol className="mt-2 flex flex-col gap-1 text-sm">
-              {CONTENTS.map(([id, title], index) => (
-                <li key={id}>
-                  <a href={`#${id}`} className="underline underline-offset-2">
-                    {index + 1}. {title}
-                  </a>
-                </li>
-              ))}
-            </ol>
-          </details>
+      <article className="flex min-w-0 max-w-3xl flex-1 flex-col gap-10 font-[family-name:var(--font-reading)] text-[1.08rem] leading-8">
+        <header className="flex flex-col gap-6">
+          <div className="flex flex-wrap items-center gap-2 font-sans text-xs font-medium">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-foreground px-3 py-1">
+              <HugeiconsIcon icon={BookOpen01Icon} strokeWidth={2} className="size-3.5" />
+              Documentation
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-muted-foreground">
+              {CONTENTS.length} sections
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-muted-foreground">
+              <HugeiconsIcon icon={Clock01Icon} strokeWidth={2} className="size-3.5" />
+              About 30 minutes, with snacks
+            </span>
+          </div>
+          <div className="flex flex-col gap-3">
+            <h1 className="font-sans text-3xl font-semibold tracking-tight sm:text-5xl">How it works</h1>
+            <p className="text-xl text-muted-foreground">
+              Everything I learned building a sentence generator from scratch: the maths behind each step,
+              where it lives in the code, and the honest story of how it got here. Numbers marked{" "}
+              <em>live</em> are computed from the corpus as it is right now, while you read.
+            </p>
+          </div>
+          <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {[
+              { icon: ParagraphIcon, label: "Sentences", value: n(stats.sentences) },
+              { icon: TextIcon, label: "Tokens", value: n(stats.tokens) },
+              { icon: TextFontIcon, label: "Distinct words", value: n(stats.vocabulary) },
+              {
+                icon: NeuralNetworkIcon,
+                label: neural ? "LSTM perplexity" : "Neural model",
+                value: neural ? String(neural.perplexity) : "Not trained",
+              },
+            ].map((stat) => (
+              <div key={stat.label} className="flex flex-col gap-2 rounded-xl border p-4">
+                <dt className="flex items-center justify-between text-xs text-muted-foreground">
+                  <HugeiconsIcon icon={stat.icon} strokeWidth={2} className="size-4" />
+                  <span className="rounded-full border px-1.5 text-[0.65rem] tracking-wide uppercase">live</span>
+                </dt>
+                <dd className="flex flex-col">
+                  <span className="text-xl font-semibold tracking-tight tabular-nums">{stat.value}</span>
+                  <span className="text-xs text-muted-foreground">{stat.label}</span>
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <JumpGrid />
         </header>
 
-        <Section id="overview" title="1. The idea in one picture">
+        <Section id="backstory">
           <p>
-            A <strong>language model</strong> assigns a probability to every possible next word given
-            the words before it. Once you have that, writing a sentence is just repeated sampling: pick
-            a likely next word, append it, repeat. This project builds two such models from scratch, a
-            counting model (n-grams) and a small neural network (an LSTM), and adds one twist: the
-            sentence has to contain <em>your</em> word, possibly in the middle. So instead of writing
-            left to right from the start, it starts at your word and grows outwards in both
-            directions.
+            This started as a college NLP project with a deliberately tiny brief: type a word, get
+            sentences that contain it. Five sentences, twenty, a hundred, whatever you ask for. The easy
+            way out was obvious: send the word to a big AI model and print whatever comes back. Done by
+            lunch.
           </p>
-          <Pipeline />
+          <Thought>
+            Calling an API and writing &ldquo;I built a language model&rdquo; in the report felt a bit like
+            buying a cake and telling everyone you baked it.
+          </Thought>
+          <p>
+            So I picked the hard option on purpose: <strong>build the models myself, from scratch</strong>.
+            No pretrained weights, no external AI service. If a sentence comes out of this app, I can
+            point at the exact counts, vectors and coin flips that produced it. That turned out to be
+            the most fun part, because it means every sentence can be <em>explained</em>, which became a
+            whole feature of its own.
+          </p>
+          <p>
+            Then the scope crept. A neural model joined the counting model. Then grammar checks, then
+            charts, then a page that shows where every phrase was copied from, then offline mode, and
+            then this page, because I kept forgetting why I had done things.
+          </p>
+          <Thought tilt="right">
+            Scope creep, a field guide: &ldquo;I&apos;ll just add one small chart.&rdquo; Seven charts
+            later, here we are.
+          </Thought>
         </Section>
 
-        <Section id="tokens" title="2. From text to tokens">
+        <Section id="overview">
           <p>
-            Models work on <strong>tokens</strong>, not characters. A token here is a word (letters and
-            digits, allowing inner apostrophes and hyphens, so <code>didn&apos;t</code> and{" "}
-            <code>well-known</code> stay whole) or one of the punctuation marks{" "}
-            <code>, ; : — . ! ?</code>. Text is first split into paragraphs, then into sentences at{" "}
-            <code>. ! ?</code>, with a few repairs:
+            A <strong>language model</strong> is a machine for one question: given the words so far,
+            how likely is each possible next word? Once you can answer that, writing is just repeated
+            guessing. Pick a likely next word, append it, ask again.
+          </p>
+          <p>
+            I built two of them: a counting model (n-grams) and a small neural network (an LSTM). Then
+            there is the twist that makes this project different from a normal text generator. The
+            sentence has to contain <em>your</em> word, and it might belong in the middle. So instead of
+            writing left to right from the start, it starts at your word and grows outwards in both
+            directions, like a crystal.
+          </p>
+          <Pipeline />
+          <Thought>
+            Yes, the arrows are doing a lot of work in that diagram. Each box is a section below, so
+            think of it as a map.
+          </Thought>
+        </Section>
+
+        <Section id="approach">
+          <p>
+            Before writing code I set myself a few rules, mostly to stop future me from taking
+            shortcuts:
+          </p>
+          <ul className="list-disc space-y-2 pl-6">
+            <li>
+              <strong>From scratch, but not from nothing.</strong> The models, tokeniser, grammar
+              rules and statistics are all my own code. The training data is public text (17 novels from
+              Project Gutenberg and about 1,100 Simple English Wikipedia articles), and PyTorch does the
+              heavy lifting while training the neural network.
+            </li>
+            <li>
+              <strong>Explainable over impressive.</strong> A counting model can say exactly why it
+              picked a word: &ldquo;these 10 sentences in the corpus continue this way&rdquo;. I wanted
+              that for every word on screen, so the counting model is the main engine and the network is
+              the experimental one.
+            </li>
+            <li>
+              <strong>Generate a lot, keep the best.</strong> Sampling is cheap and random, so the app
+              writes far more candidates than you ask for, throws out the bad ones, and ranks the
+              rest. Quality comes from the filtering as much as from the model.
+            </li>
+            <li>
+              <strong>Runs on a laptop.</strong> No GPU server. The counting model starts in about two
+              seconds and the network runs in plain TypeScript, which is also why the whole thing can
+              work offline in your browser.
+            </li>
+          </ul>
+          <p>
+            The things I said no to were just as important: no word embeddings downloaded from the
+            internet, no transformer (far too big to train well on 2.4 million tokens on a laptop), and no
+            &ldquo;fixing&rdquo; bad sentences by hand. If the model writes nonsense, the filters have to
+            catch it, honestly.
+          </p>
+          <Thought tilt="right">
+            Training a transformer on this little text would have produced a very confident model of
+            very little. The LSTM is the right size for the data, which is a lesson I learned by
+            reading, not by burning a week.
+          </Thought>
+        </Section>
+
+        <Section id="tokens">
+          <p>
+            Models don&apos;t read letters, they read <strong>tokens</strong>. Here a token is a word
+            (letters and digits, with inner apostrophes and hyphens allowed, so <code>didn&apos;t</code>{" "}
+            and <code>well-known</code> stay in one piece) or one of the punctuation marks{" "}
+            <code>, ; : — . ! ?</code>. Text gets split into paragraphs first, then into sentences
+            wherever there is a <code>. ! ?</code>, and then I patch up the places where that simple rule
+            is wrong:
           </p>
           <ul className="list-disc space-y-1 pl-6">
             <li>
               Abbreviations lose their full stop (<code>Mr. Darcy</code> → <code>Mr Darcy</code>), and{" "}
-              <code>e.g.</code>/<code>i.e.</code> become &ldquo;for example&rdquo;/&ldquo;that is&rdquo;, so
-              they do not end a sentence.
+              <code>e.g.</code>/<code>i.e.</code> become &ldquo;for example&rdquo;/&ldquo;that is&rdquo;.
+              Otherwise poor Mr Darcy gets cut in half at every mention.
             </li>
             <li>
               A piece that starts in lowercase is glued to the one before it, so{" "}
@@ -125,10 +218,9 @@ export default async function DocsPage() {
             <li>Every sentence is wrapped in a start marker ⟨s⟩ and an end marker ⟨/s⟩.</li>
           </ul>
           <p>
-            Capitals at the start of a sentence are ambiguous: <em>The</em> is just <em>the</em>, but{" "}
-            <em>Anna</em> is a name. The rule used: lowercase the first word when that word is seen in
-            lowercase somewhere mid-sentence, or when it is never seen mid-sentence at all; otherwise
-            keep it. Formally, with <Tex>{String.raw`M`}</Tex> the set of tokens seen in non-initial
+            Capitals at the start of a sentence are a small puzzle: <em>The</em> is just <em>the</em>, but{" "}
+            <em>Anna</em> is a name. My rule: lowercase the first word if the corpus also uses it in
+            lowercase mid-sentence, or never uses it mid-sentence at all; otherwise leave it alone. Formally, with <Tex>{String.raw`M`}</Tex> the set of tokens seen in non-initial
             positions, the first token <Tex>{String.raw`w`}</Tex> is replaced by{" "}
             <Tex>{String.raw`\operatorname{lower}(w)`}</Tex> iff{" "}
             <Tex>{String.raw`\operatorname{lower}(w) \in M \;\lor\; w \notin M`}</Tex>.
@@ -138,25 +230,31 @@ export default async function DocsPage() {
             rule. Both models, and the Python training script, use exactly this tokeniser, so they see
             identical tokens.
           </InCode>
+          <Thought>
+            The tokeniser is the least glamorous file in the project and the one I rewrote the most.
+            Every weird sentence the model wrote eventually traced back to a weird token.
+          </Thought>
         </Section>
 
-        <Section id="language-models" title="3. Language models">
+        <Section id="language-models">
           <p>
-            The probability of a whole sentence <Tex>{String.raw`w_1 w_2 \dots w_n`}</Tex> can always be
-            written, exactly, with the <strong>chain rule</strong> of probability:
+            Here is the maths that everything else hangs on. The probability of a whole sentence{" "}
+            <Tex>{String.raw`w_1 w_2 \dots w_n`}</Tex> can always be written, exactly, with the{" "}
+            <strong>chain rule</strong> of probability:
           </p>
           <Tex block>{String.raw`P(w_1, \dots, w_n) = \prod_{i=1}^{n} P(w_i \mid w_1, \dots, w_{i-1})`}</Tex>
           <p>
-            The trouble is the conditioning: almost no long history ever repeats in a corpus, so these
-            probabilities cannot be estimated directly. An <strong>n-gram model</strong> makes the{" "}
-            <strong>Markov assumption</strong>: only the last <Tex>{String.raw`k`}</Tex> words matter.
+            Exact, and useless as it stands: almost no long history ever repeats in a corpus, so there is
+            nothing to estimate those probabilities from. An <strong>n-gram model</strong> cheats in a
+            principled way with the <strong>Markov assumption</strong>: only the last{" "}
+            <Tex>{String.raw`k`}</Tex> words matter.
           </p>
           <Tex block>{String.raw`P(w_i \mid w_1, \dots, w_{i-1}) \approx P(w_i \mid w_{i-k}, \dots, w_{i-1})`}</Tex>
           <p>
             With <Tex>{String.raw`k = 1`}</Tex> this is a bigram model, with{" "}
             <Tex>{String.raw`k = 2`}</Tex> a trigram model, and so on. The probabilities are estimated by{" "}
-            <strong>counting</strong> (the maximum-likelihood estimate), where{" "}
-            <Tex>{String.raw`c(\cdot)`}</Tex> is the number of times a sequence occurs in the corpus:
+            <strong>counting</strong>, which is the maximum-likelihood estimate. Here{" "}
+            <Tex>{String.raw`c(\cdot)`}</Tex> is how many times a sequence occurs in the corpus:
           </p>
           <Tex block>{String.raw`P_{\text{ML}}(w \mid a, b) = \frac{c(a, b, w)}{c(a, b)}`}</Tex>
           <p>
@@ -174,18 +272,23 @@ export default async function DocsPage() {
             licenseUrl={CC_BY_SA_3}
           />
           <p>
-            Generation in this project uses contexts of up to three words, so its main model is a{" "}
+            Generation here uses contexts of up to three words, so the main model is a{" "}
             <strong>4-gram</strong> model <Tex>{String.raw`P(w \mid a, b, c)`}</Tex>, with shorter
-            contexts as fallbacks (section 5). Scoring uses an interpolated trigram model (section 6).
+            contexts as fallbacks (see &ldquo;Growing a sentence&rdquo;). Scoring uses an interpolated
+            trigram model (see &ldquo;Scoring and ranking&rdquo;).
           </p>
+          <Thought tilt="right">
+            Claude Shannon did this by hand in 1948, flipping through books to pick the next word. I have
+            a laptop and still felt clever. Humbling.
+          </Thought>
         </Section>
 
-        <Section id="suffix-array" title="4. Counting fast: the suffix array">
+        <Section id="suffix-array">
           <p>
-            Generating thousands of sentences needs millions of counts like{" "}
-            <Tex>{String.raw`c(a, b, w)`}</Tex>. Storing a table of every n-gram would cost a lot of
-            memory, so the model instead keeps two arrays over the{" "}
-            {n(positions)} token positions (live):
+            Writing thousands of sentences means asking for millions of counts like{" "}
+            <Tex>{String.raw`c(a, b, w)`}</Tex>. My first instinct was a giant table of every n-gram.
+            My second instinct, after estimating the memory, was to never mention the first one again.
+            Instead the model keeps just two arrays over the {n(positions)} token positions (live):
           </p>
           <ul className="list-disc space-y-1 pl-6">
             <li>
@@ -200,9 +303,9 @@ export default async function DocsPage() {
           </ul>
           <SuffixArray />
           <p>
-            Because equal prefixes are adjacent after sorting, all occurrences of a context form one
-            contiguous range of <Tex>{String.raw`\text{order}`}</Tex>. Two binary searches find its two
-            ends, and the count is simply the length of the range:
+            The trick: after sorting, every occurrence of the same context sits next to the others, in
+            one unbroken range of <Tex>{String.raw`\text{order}`}</Tex>. Two binary searches find the two
+            ends, and the count is just how long the range is:
           </p>
           <Tex block>{String.raw`c(a, b) = \mathit{hi} - \mathit{lo}, \qquad \text{found in } O(\log N) \text{ steps}`}</Tex>
           <p>
@@ -212,6 +315,10 @@ export default async function DocsPage() {
             inside that bucket. Sorting costs <Tex>{String.raw`O(N \log N)`}</Tex> once, which takes
             about two seconds when the server starts.
           </p>
+          <Thought>
+            This is the part I&apos;m proudest of. It looks like a data-structures exam question, and
+            then suddenly the whole corpus answers questions in microseconds.
+          </Thought>
           <Code file="src/lib/sentence-model.ts · find()">{`
 // Narrow [lo, hi) one context word at a time.
 let lo = first[a], hi = first[a + 1];
@@ -225,33 +332,34 @@ return hi - lo;  // = c(a, b, c)
 `}</Code>
         </Section>
 
-        <Section id="generation" title="5. Growing a sentence">
+        <Section id="generation">
           <Sub>Sampling is just picking a random occurrence</Sub>
           <p>
-            To sample the next word after a context, the model picks one of the context&apos;s
-            occurrences uniformly at random and takes the token that follows it there. Since{" "}
+            My favourite shortcut in the whole project: to pick the next word after a context, don&apos;t
+            compute any probabilities at all. Jump to a random place where that context occurs in the
+            corpus and take whatever word comes next there. Since{" "}
             <Tex>{String.raw`c(a,b,c,w)`}</Tex> of the <Tex>{String.raw`c(a,b,c)`}</Tex> occurrences are
             followed by <Tex>{String.raw`w`}</Tex>, the chance of getting <Tex>{String.raw`w`}</Tex> is
           </p>
           <Tex block>{String.raw`\Pr[\text{next} = w] = \frac{c(a, b, c, w)}{c(a, b, c)} = P_{\text{ML}}(w \mid a, b, c)`}</Tex>
           <p>
-            which is exactly the maximum-likelihood distribution, without ever computing it. Going
+            which is exactly the maximum-likelihood distribution, and I never had to compute it. Going
             left works the same way with the token <em>before</em> each occurrence, giving a backward
             model <Tex>{String.raw`P(w \mid a, b, c)`}</Tex> for the word preceding{" "}
             <Tex>{String.raw`a\,b\,c`}</Tex>.
           </p>
           <Sub>Bidirectional growth</Sub>
           <p>
-            The seed is a random occurrence of your word, so a word is seeded in proportion to how
-            often each of its contexts appears. Its two neighbours come along, giving a three-token
+            It starts from a random occurrence of your word, so common contexts get picked more often,
+            the way they should. Its two neighbours come along, giving a three-token
             start. The sentence then grows rightwards using the last three tokens as context until it
             produces ⟨/s⟩, and leftwards using the first three until it produces ⟨s⟩.
           </p>
           <Growth />
           <Sub>Backoff and the creativity slider</Sub>
           <p>
-            A three-word context seen only once has a single continuation, so following it only
-            replays the original sentence. When <Tex>{String.raw`c(a,b,c) \le 1`}</Tex> the model
+            A three-word context seen only once has exactly one continuation, so following it just
+            replays the original sentence word for word. Plagiarism with extra steps. When <Tex>{String.raw`c(a,b,c) \le 1`}</Tex> the model
             therefore drops to a shorter context with some probability, controlled by the creativity
             setting <Tex>{String.raw`\gamma \in [0, 1]`}</Tex>:
           </p>
@@ -261,9 +369,14 @@ return hi - lo;  // = c(a, b, c)
             context (safer grammar); at <Tex>{String.raw`\gamma = 1`}</Tex> it always leaves unique
             contexts and sometimes uses only one word of context (more surprising sentences).
           </p>
+          <Thought tilt="right">
+            The creativity slider is honestly a &ldquo;how weird do you want it&rdquo; slider. At the top
+            it writes like someone who skimmed every book at once.
+          </Thought>
           <Sub>Steering towards several words</Sub>
           <p>
-            With two or three words, the rarest one is the seed. At every step the model checks
+            With two or three words, the rarest one becomes the seed (it&apos;s the hardest to fit in
+            later). At every step the model checks
             whether a still-missing word <Tex>{String.raw`x`}</Tex> can follow the current context:
             if <Tex>{String.raw`c(b, c, x) > 0`}</Tex> it takes <Tex>{String.raw`x`}</Tex> with
             probability 0.9, otherwise if <Tex>{String.raw`c(c, x) > 0`}</Tex> with probability 0.4.
@@ -277,17 +390,22 @@ return hi - lo;  // = c(a, b, c)
             <Tex>{String.raw`L`}</Tex> is its length in tokens. Sentences that match a corpus sentence
             exactly are rejected too.
           </p>
+          <Thought>
+            Early versions loved copying. I&apos;d type &ldquo;river&rdquo;, get a suspiciously perfect
+            sentence, and find it word for word in one of the novels. Great writing, zero credit. The copy
+            limit is the model&apos;s anti-plagiarism policy.
+          </Thought>
           <InCode file="src/lib/sentence-model.ts">
             <code>sampler()</code> picks seeds (also handling the start, middle and end positions), and{" "}
             <code>grow()</code> runs the two loops, the backoff, the steering and the copy check.
           </InCode>
         </Section>
 
-        <Section id="scoring" title="6. Scoring and ranking">
+        <Section id="scoring">
           <p>
-            Many more candidates are generated than you ask for (four times as many for the Markov
-            model), and the best are kept. &ldquo;Best&rdquo; means most probable under a smoothed
-            trigram model that mixes three estimates with fixed weights, a technique called{" "}
+            The app writes many more candidates than you ask for (four times as many with the Markov
+            model) and keeps the best. &ldquo;Best&rdquo; means most probable under a smoothed trigram
+            model that blends three estimates with fixed weights, a technique called{" "}
             <strong>linear interpolation</strong>:
           </p>
           <Tex block>{String.raw`\hat P(w \mid a, b) = 0.5\,\frac{c(a,b,w)}{c(a,b)} + 0.3\,\frac{c(b,w)}{c(b)} + 0.2\,\frac{c(w)}{N}`}</Tex>
@@ -313,8 +431,9 @@ return hi - lo;  // = c(a, b, c)
           </p>
           <Tex block>{String.raw`\text{PP} = \exp(-\text{score}) = \Big( \prod_{i=1}^{n} \hat P(w_i \mid w_{i-2}, w_{i-1}) \Big)^{-1/n}`}</Tex>
           <p>
-            Read it as &ldquo;on average, the model was as unsure as if it had to choose between PP
-            equally likely words at each step&rdquo;. Lower is more natural. Both engines&apos; sentences
+            Read it as &ldquo;on average, the model was as unsure as if it were choosing between PP
+            equally likely words at every step&rdquo;. Lower is more natural. A perplexity of 10 is a
+            confident student; 500 is the same student at an 8 a.m. lecture. Both engines&apos; sentences
             are measured with this same Markov model, so their perplexities are comparable.
           </p>
           <InCode file="src/lib/generate.ts">
@@ -324,11 +443,12 @@ return hi - lo;  // = c(a, b, c)
           </InCode>
         </Section>
 
-        <Section id="neural" title="7. The neural model">
+        <Section id="neural">
           <p>
-            Counting cannot generalise: a context never seen is a dead end. A neural language model
-            instead maps every word to a vector and learns a function from the history to a
-            probability distribution, so similar contexts give similar predictions.
+            Counting has one big weakness: it can&apos;t generalise. A context it has never seen is a
+            dead end. A neural language model turns every word into a vector of numbers and learns a
+            function from the history to a probability distribution, so similar contexts get similar
+            predictions even if it has never seen that exact one.
           </p>
           <Sub>Recurrent networks</Sub>
           <p>
@@ -346,7 +466,8 @@ return hi - lo;  // = c(a, b, c)
           />
           <Sub>The LSTM cell</Sub>
           <p>
-            Plain RNNs forget quickly because gradients shrink as they flow back through many steps.
+            Plain RNNs have the memory of a goldfish: the learning signal shrinks as it flows back
+            through many steps, so early words stop mattering.
             The <strong>long short-term memory</strong> cell adds a separate memory{" "}
             <Tex>{String.raw`c_t`}</Tex> and three gates that decide what to forget, what to write and
             what to output:
@@ -384,8 +505,10 @@ h_t &= o_t \odot \tanh(c_t)
           <Tex block>{String.raw`z = E\,h_t + b, \qquad P(w \mid \text{history}) = \operatorname{softmax}(z)_w = \frac{e^{z_w}}{\sum_{v} e^{z_v}}`}</Tex>
           <Sub>Writing in both directions with one network</Sub>
           <p>
-            A normal language model only writes left to right, from the start of a sentence. To start
-            at a word in the middle, every training sentence is rewritten around a random pivot:
+            Here was my real problem. A normal language model only writes left to right, from the start
+            of a sentence, but I need to start from <em>your</em> word, which might be in the middle. My
+            fix: rewrite every training sentence around a random pivot word, so the network learns to
+            write both halves:
           </p>
           <Pivot />
           <p>
@@ -408,6 +531,11 @@ h_t &= o_t \odot \tanh(c_t)
             <strong>{neural ? neural.perplexity : "not available until trained"}</strong> (live), down
             from 8,000 for a model that knows nothing.
           </p>
+          <Thought tilt="right">
+            Training ran on my laptop&apos;s GPU: twelve passes over 2.4 million tokens. What came out
+            writes sentences that are mostly grammatical and often gloriously meaningless, which, for 256
+            numbers of memory, I count as a win.
+          </Thought>
           <Sub>Temperature and top-k sampling</Sub>
           <p>
             When writing, the logits are divided by a temperature <Tex>{String.raw`T`}</Tex> before the
@@ -438,8 +566,11 @@ for (let w = 0; w < V; w++)                    // tied output layer
 `}</Code>
         </Section>
 
-        <Section id="filters" title="8. Filters">
-          <p>Every candidate passes these checks, in order, before it can be ranked:</p>
+        <Section id="filters">
+          <p>
+            This is where most candidates die. Every one has to get through these checks, in order,
+            before it is even allowed to be ranked:
+          </p>
           <ul className="list-disc space-y-1 pl-6">
             <li>
               <strong>Length</strong>: words (not punctuation) between 4 and 30, or 3–8, 9–16, 17–32 for
@@ -474,6 +605,11 @@ for (let w = 0; w < V; w++)                    // tied output layer
             means <Tex>{String.raw`\text{FRE} \ge 70`}</Tex> and &ldquo;hard&rdquo;{" "}
             <Tex>{String.raw`\text{FRE} < 50`}</Tex>.
           </p>
+          <Thought>
+            The grammar check is not a real parser, it&apos;s a bouncer with a list. It doesn&apos;t
+            understand sentences, it just refuses entry to obvious troublemakers like &ldquo;the of&rdquo;.
+            The Statistics tab shows exactly who got thrown out and why.
+          </Thought>
           <InCode file="src/lib/grammar.ts · src/lib/readability.ts · src/lib/generate.ts">
             <code>explain()</code> returns the tags and the first broken rule, which the Statistics tab
             shows for rejected candidates; <code>readingEase()</code> is the formula above; the
@@ -482,7 +618,7 @@ for (let w = 0; w < V; w++)                    // tied output layer
           </InCode>
         </Section>
 
-        <Section id="analysis" title="9. The analysis numbers">
+        <Section id="analysis">
           <Sub>Where the wording comes from</Sub>
           <p>
             A sentence is split greedily into the longest stretches that appear verbatim in the
@@ -513,8 +649,9 @@ for (let w = 0; w < V; w++)                    // tied output layer
           </p>
           <Tex block>{String.raw`\operatorname{sim}(w, x) = \frac{\sum_{c} \min\big(\operatorname{PPMI}(w,c),\, \operatorname{PPMI}(x,c)\big)}{\sum_{c} \operatorname{PPMI}(w,c)}`}</Tex>
           <p>
-            Candidates must share at least three neighbours; function words are excluded. This is
-            what turns <em>river</em> into <em>water, valley, delta, basin</em>.
+            Candidates must share at least three neighbours, and function words are excluded. This is
+            what turns <em>river</em> into <em>water, valley, delta, basin</em>, with no dictionary
+            involved, just who hangs out with whom.
           </p>
           <Sub>Suggestions for unknown words: edit distance</Sub>
           <p>
@@ -534,7 +671,7 @@ for (let w = 0; w < V; w++)                    // tied output layer
           </InCode>
         </Section>
 
-        <Section id="zipf" title="10. Zipf's law in this corpus">
+        <Section id="zipf">
           <p>
             In almost every language, a word&apos;s frequency is roughly inversely proportional to its
             frequency rank, <Tex>{String.raw`f(r) \propto 1/r^{s}`}</Tex> with{" "}
@@ -545,14 +682,16 @@ for (let w = 0; w < V; w++)                    // tied output layer
           </p>
           <Zipf points={model.rankFrequency()} />
           <p>
-            This is why the models behave as they do: a handful of words (<em>the</em>,{" "}
+            Seeing this line appear from my own corpus was a genuine &ldquo;oh, it&apos;s real&rdquo;
+            moment. And it explains a lot about how the models behave: a handful of words (<em>the</em>,{" "}
             <em>and</em>, <em>of</em>) supply most contexts, while more than half of the vocabulary (56% right
             now) occurs only once or twice, so many contexts have a single continuation. That long tail is what
             the backoff rule and the neural model are there to handle.
           </p>
         </Section>
 
-        <Section id="code" title="11. How a request flows through the code">
+        <Section id="code">
+          <p>Here is the life of one click on &ldquo;Generate&rdquo;, start to finish:</p>
           <ol className="list-decimal space-y-2 pl-6">
             <li>
               <code>src/app/generator.tsx</code> (browser) sends your words and settings to{" "}
@@ -571,12 +710,18 @@ for (let w = 0; w < V; w++)                    // tied output layer
               the filters run, and the best-scoring sentences are kept.
             </li>
             <li>
-              Each sentence gets its numbers, and the run is saved to <code>data/runs/</code> by{" "}
-              <code>src/lib/runs.ts</code>, so History and Explain can reopen it.
+              Each sentence gets its numbers, and the run is saved so History and Explain can reopen it:
+              to <code>data/runs/</code> by <code>src/lib/runs.ts</code> when running locally, or in your
+              browser (IndexedDB) on a hosted site, where the server can&apos;t keep files.
             </li>
             <li>
-              Explain calls <code>/api/runs/[id]/sentences/[index]</code>, which recomputes
-              probabilities, alternatives, tags and sources for that one sentence.
+              Explain recomputes probabilities, alternatives, tags and sources for one sentence, through{" "}
+              <code>/api/runs/[id]/sentences/[index]</code> or, for runs kept in the browser,{" "}
+              <code>/api/explain</code>.
+            </li>
+            <li>
+              With no network at all, a background worker in your browser runs the very same engine code
+              on a saved copy of the corpus and models (see Settings).
             </li>
           </ol>
           <div className="overflow-x-auto rounded-lg border">
@@ -592,11 +737,13 @@ for (let w = 0; w < V; w++)                    // tied output layer
                 <tr><td>src/lib/sentence-model.ts</td><td>Suffix array, n-gram sampling, scoring, analysis</td></tr>
                 <tr><td>src/lib/neural-model.ts</td><td>LSTM inference, sampling and replay</td></tr>
                 <tr><td>ml/train.py</td><td>Trains the LSTM in PyTorch and exports its weights</td></tr>
-                <tr><td>src/lib/generate.ts</td><td>Oversampling, filters, ranking, run summary</td></tr>
+                <tr><td>src/lib/engine.ts</td><td>Oversampling, filters, ranking, run summary, Explain</td></tr>
+                <tr><td>src/lib/generate.ts</td><td>Runs the engine on the server and saves the run</td></tr>
                 <tr><td>src/lib/grammar.ts</td><td>Part-of-speech tags and grammar rules</td></tr>
                 <tr><td>src/lib/readability.ts</td><td>Syllables and Flesch reading ease</td></tr>
                 <tr><td>src/lib/word-forms.ts</td><td>Inflections and irregular forms</td></tr>
-                <tr><td>src/lib/runs.ts</td><td>Saved runs, ratings and the Explain breakdown</td></tr>
+                <tr><td>src/lib/runs.ts</td><td>Saved runs and ratings on the server</td></tr>
+                <tr><td>src/lib/offline/</td><td>Offline worker, browser run storage, service worker control</td></tr>
                 <tr><td>src/lib/corpus.ts</td><td>Loading and caching models, uploads, sources</td></tr>
                 <tr><td>src/lib/source-reader.ts</td><td>Paragraphs and phrase search for the reader</td></tr>
                 <tr><td>scripts/</td><td>Downloading the corpus, exporting training sentences</td></tr>
@@ -606,7 +753,49 @@ for (let w = 0; w < V; w++)                    // tied output layer
           </div>
         </Section>
 
-        <Section id="references" title="12. References">
+        <Section id="bloopers">
+          <p>
+            Every project has a blooper reel. Here is mine, so you can laugh, and maybe skip a few of
+            these yourself:
+          </p>
+          <ul className="list-disc space-y-3 pl-6">
+            <li>
+              <strong>Wikipedia told me to calm down.</strong> My first download script fired requests
+              in parallel and promptly got rate-limited (HTTP 429, &ldquo;too many requests&rdquo;). The
+              polite fix: one request at a time, honour the server&apos;s <code>Retry-After</code>, and ask
+              for 50 articles per request instead of one.
+            </li>
+            <li>
+              <strong>&ldquo;e.g.&rdquo; ended sentences.</strong> To a naive tokeniser, every full stop
+              is the end of the world. Half-sentences everywhere, until abbreviations got special
+              treatment.
+            </li>
+            <li>
+              <strong>The model that wouldn&apos;t update.</strong> To avoid rebuilding the model on every
+              request, I cached it in memory. Then I changed the model&apos;s code, and the server kept
+              serving the old one, failing with &ldquo;explain is not a function&rdquo;. The cache now also
+              checks that the code is the same version.
+            </li>
+            <li>
+              <strong>The perfect plagiarist.</strong> The first good-looking sentences were word-for-word
+              copies of the novels. Hence the copy limit and the novelty filter.
+            </li>
+            <li>
+              <strong>The invisible scrollbar.</strong> The page scrolled for no visible reason. The
+              culprit: hidden form inputs inside the collapsed Options panel, quietly sticking out below
+              it. One CSS class fixed a bug that took far longer to find.
+            </li>
+          </ul>
+          <Thought tilt="right">
+            Lesson of the project: the maths was the easy part. Text is messy, servers are moody, and the
+            hardest bugs were the ones that didn&apos;t look like bugs.
+          </Thought>
+        </Section>
+
+        <Section id="references">
+          <p>
+            The giants whose shoulders this project stands on, slightly wobbling:
+          </p>
           <ul className="list-disc space-y-2 pl-6 text-sm">
             <li>
               Jurafsky, D. and Martin, J. H. <em>Speech and Language Processing</em>, 3rd ed. draft,

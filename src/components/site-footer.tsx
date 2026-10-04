@@ -95,7 +95,9 @@ function Author() {
     : [];
 
   return (
-    <span className="group/author relative inline-block">
+    // On a phone the card is placed against the footer (full width, so it can
+    // never reach past the screen); on larger screens it is centred on the name.
+    <span className="group/author inline-block sm:relative">
       <a
         href={PROFILE}
         className="font-medium text-foreground underline-offset-4 outline-none hover:underline focus-visible:underline"
@@ -103,7 +105,7 @@ function Author() {
         {AUTHOR}
       </a>
       {/* The bottom padding bridges the gap, so the pointer can move up into the card. */}
-      <span className="pointer-events-none absolute bottom-full left-1/2 z-40 w-72 -translate-x-1/2 translate-y-1 pb-3 opacity-0 transition-all duration-200 group-hover/author:pointer-events-auto group-hover/author:translate-y-0 group-hover/author:opacity-100 group-has-focus-visible/author:pointer-events-auto group-has-focus-visible/author:translate-y-0 group-has-focus-visible/author:opacity-100 max-sm:left-0 max-sm:translate-x-0">
+      <span className="pointer-events-none absolute inset-x-4 bottom-full z-40 translate-y-1 pb-3 opacity-0 transition-all duration-200 group-hover/author:pointer-events-auto group-hover/author:translate-y-0 group-hover/author:opacity-100 group-has-focus-visible/author:pointer-events-auto group-has-focus-visible/author:translate-y-0 group-has-focus-visible/author:opacity-100 sm:inset-x-auto sm:left-1/2 sm:w-72 sm:-translate-x-1/2">
         <a
           href={PROFILE}
           tabIndex={-1}
@@ -162,7 +164,7 @@ export function SiteFooter() {
     "group flex h-[50px] items-center justify-center gap-1.5 rounded-full border bg-background/85 text-sm font-medium shadow-lg shadow-black/10 backdrop-blur-md transition-all duration-200 outline-none hover:-translate-y-0.5 hover:bg-foreground hover:text-background focus-visible:ring-2 focus-visible:ring-ring dark:shadow-black/40";
 
   return (
-    <footer className="mx-auto flex w-full max-w-[90rem] flex-wrap items-center justify-between gap-4 px-4 pt-10 pb-6 print:hidden">
+    <footer className="relative mx-auto flex w-full max-w-[90rem] flex-wrap items-center justify-between gap-4 px-4 pt-10 pb-6 print:hidden">
       <p className="text-sm text-muted-foreground">
         Built from scratch by <Author />
         <span className="hidden lg:inline"> · open source under the MIT licence</span>
