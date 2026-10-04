@@ -169,10 +169,36 @@ function Author() {
   );
 }
 
+/**
+ * True when the page is taller than the window on a larger screen. The GitHub
+ * buttons then float in the top-right corner, opposite the wordseed pill,
+ * instead of waiting at the bottom of the page.
+ */
+function useFloatButtons(): boolean {
+  const [float, setFloat] = useState(false);
+  useEffect(() => {
+    const wide = matchMedia("(min-width: 48rem)");
+    const check = () =>
+      setFloat(wide.matches && document.documentElement.scrollHeight > innerHeight + 1);
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(document.body);
+    addEventListener("resize", check);
+    wide.addEventListener("change", check);
+    return () => {
+      observer.disconnect();
+      removeEventListener("resize", check);
+      wide.removeEventListener("change", check);
+    };
+  }, []);
+  return float;
+}
+
 /** Who made it, and floating links to the code on GitHub. */
 export function SiteFooter() {
   const stars = useGitHub<Repo>(`repos/${REPO}`)?.stargazers_count ?? null;
   const { element, shift } = useClearOfFlyout();
+  const float = useFloatButtons();
   // The same height as the Settings slide-out (50px) and, with the footer's
   // 24px bottom padding, centred on the same line once scrolled to the bottom.
   const bubble =
@@ -194,8 +220,13 @@ export function SiteFooter() {
       </p>
       <div
         ref={element}
-        className="flex items-center gap-2 transition-transform duration-300 ease-out"
-        style={shift ? { transform: `translateX(-${shift}px)` } : undefined}
+        className={
+          float
+            ? // Top-right, inside the empty band above the page's content.
+              "fixed top-4 right-4 z-30 flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-500 [&>a]:h-11 [&>a:first-child]:w-11"
+            : "flex items-center gap-2 transition-transform duration-300 ease-out"
+        }
+        style={!float && shift ? { transform: `translateX(-${shift}px)` } : undefined}
       >
         <a href={`https://github.com/${REPO}`} aria-label="Source code on GitHub" title="Source code on GitHub" className={`${bubble} w-[50px]`}>
           <GithubMark className="size-5" />
