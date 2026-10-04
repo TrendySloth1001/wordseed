@@ -13,6 +13,9 @@
 
 Type a word, get as many sentences as you want. Two language models built from scratch, an n-gram model on a suffix array and a small LSTM, grow sentences around your word, then rank, filter and explain every one of them mathematically.
 
+**[Try it live → wordseed-five.vercel.app](https://wordseed-five.vercel.app)**
+
+[![Visit wordseed](https://img.shields.io/badge/Visit-wordseed--five.vercel.app-000?style=for-the-badge&logo=vercel&logoColor=white)](https://wordseed-five.vercel.app)
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/TrendySloth1001/wordseed)
 
 ## Screenshots
