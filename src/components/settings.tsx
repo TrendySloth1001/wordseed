@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ArrowRight01Icon,
+  CookieIcon,
   ComputerIcon,
   Moon02Icon,
   RefreshIcon,
@@ -15,6 +16,7 @@ import {
   WifiDisconnected01Icon,
 } from "@hugeicons/core-free-icons";
 import { megabytes, useChoice, useOnline } from "@/components/offline";
+import { saveStorageChoice, useStorageChoice, useTermsAccepted } from "@/lib/consent";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
@@ -180,6 +182,8 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenCh
             Everything stays in this browser. Nothing about you is stored on the server or sent anywhere.
           </p>
         </section>
+
+        <PrivacySettings onNavigate={() => onOpenChange(false)} />
       </DialogContent>
     </Dialog>
   );
@@ -191,5 +195,57 @@ function Info({ label, children }: { label: string; children: React.ReactNode })
       <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="font-medium tabular-nums">{children}</dd>
     </div>
+  );
+}
+
+/** The storage choices from the corner notice, and the terms, changeable at any time. */
+function PrivacySettings({ onNavigate }: { onNavigate: () => void }) {
+  const choice = useStorageChoice();
+  const agreed = useTermsAccepted();
+  if (choice === undefined) return null;
+  const current = { history: choice?.history ?? false, external: choice?.external ?? false };
+
+  return (
+    <section className="flex flex-col gap-3">
+      <h3 className="flex items-center gap-2 text-sm font-medium">
+        <HugeiconsIcon icon={CookieIcon} strokeWidth={2} className="size-4" />
+        Privacy &amp; cookies
+      </h3>
+      <ul className="divide-y overflow-hidden rounded-xl border text-sm">
+        {(
+          [
+            ["history", "Keep my History", "Runs and ratings stay in this browser. Off: only until the tab closes."],
+            ["external", "Load GitHub info", "The footer's star count and author card, from GitHub."],
+          ] as const
+        ).map(([key, title, text]) => (
+          <li key={key} className="flex items-start gap-3 p-3">
+            <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <label htmlFor={`privacy-${key}`} className="font-medium">
+                {title}
+              </label>
+              <span className="text-xs text-muted-foreground">{text}</span>
+            </span>
+            <Switch
+              id={`privacy-${key}`}
+              checked={current[key]}
+              onCheckedChange={(value) => saveStorageChoice({ ...current, [key]: value })}
+              className="mt-0.5"
+            />
+          </li>
+        ))}
+      </ul>
+      <p className="text-xs text-muted-foreground">
+        No cookies are set.{" "}
+        {agreed ? "You have agreed to the " : "You'll be asked to agree to the "}
+        <Link href="/terms" onClick={onNavigate} className="underline underline-offset-4">
+          Terms of use
+        </Link>
+        {agreed ? "" : " when you first generate"}. More in{" "}
+        <Link href="/privacy" onClick={onNavigate} className="underline underline-offset-4">
+          Privacy &amp; cookies
+        </Link>
+        .
+      </p>
+    </section>
   );
 }

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { LocalRunFromQuery } from "../[id]/run-page-body";
 
-export const metadata: Metadata = { title: "Saved run" };
+export const metadata: Metadata = { title: "Saved run", robots: { index: false, follow: false } };
 
 /**
  * A run kept in this browser, named by ?id=. One static page for all of them,

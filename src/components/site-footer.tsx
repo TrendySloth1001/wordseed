@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowUpRight01Icon } from "@hugeicons/core-free-icons";
 import { GithubMark, StarBurstIcon } from "@/components/animated-icons";
 import { FLYOUT_EVENT, type FlyoutBox } from "@/components/site-nav";
+import { useStorageChoice } from "@/lib/consent";
 
 const AUTHOR = "Nikhil Kumawat";
 const LOGIN = "TrendySloth1001";
@@ -27,7 +29,10 @@ type User = {
  */
 function useGitHub<T>(path: string): T | null {
   const [data, setData] = useState<T | null>(null);
+  // Only with the visitor's permission: GitHub sees their IP address.
+  const allowed = useStorageChoice()?.external === true;
   useEffect(() => {
+    if (!allowed) return;
     const key = `wordseed-github:${path}`;
     try {
       const saved = sessionStorage.getItem(key);
@@ -46,8 +51,8 @@ function useGitHub<T>(path: string): T | null {
         } catch {}
       })
       .catch(() => {});
-  }, [path]);
-  return data;
+  }, [path, allowed]);
+  return allowed ? data : null;
 }
 
 /**
@@ -168,6 +173,14 @@ export function SiteFooter() {
       <p className="text-sm text-muted-foreground">
         Built from scratch by <Author />
         <span className="hidden lg:inline"> · open source under the MIT licence</span>
+        {" · "}
+        <Link href="/terms" className="underline-offset-4 hover:text-foreground hover:underline">
+          Terms
+        </Link>
+        {" · "}
+        <Link href="/privacy" className="underline-offset-4 hover:text-foreground hover:underline">
+          Privacy
+        </Link>
       </p>
       <div
         ref={element}

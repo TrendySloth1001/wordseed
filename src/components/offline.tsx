@@ -19,6 +19,7 @@ import {
   type OfflineChoice,
   type SaveProgress,
 } from "@/lib/offline/client";
+import { useStorageChoice } from "@/lib/consent";
 
 const CONNECTION_EVENTS = ["online", "offline", "wordseed-server"];
 
@@ -81,7 +82,9 @@ export function OfflineConsent() {
   const [progress, setProgress] = useState<SaveProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [size, setSize] = useState<number | null>(null);
-  const asking = choice === null && offlineSupported();
+  // Asked only once the storage notice is answered, never both at the same time.
+  const answered = Boolean(useStorageChoice());
+  const asking = answered && choice === null && offlineSupported();
 
   useEffect(() => {
     if (choice === "granted" && !refreshed && navigator.onLine) {
@@ -119,20 +122,17 @@ export function OfflineConsent() {
   return (
     <section
       aria-label="Offline use"
-      className="fixed inset-x-3 bottom-[calc(max(0.75rem,env(safe-area-inset-bottom))+4.75rem)] z-40 rounded-2xl border bg-background p-4 shadow-xl shadow-black/15 animate-in fade-in slide-in-from-bottom-4 duration-500 md:inset-x-auto md:bottom-5 md:left-5 md:w-[24rem] dark:shadow-black/50 print:hidden"
+      className="fixed inset-x-3 bottom-[calc(max(0.75rem,env(safe-area-inset-bottom))+4.75rem)] z-40 rounded-2xl border bg-background/95 p-3.5 shadow-xl shadow-black/10 backdrop-blur-md animate-in fade-in slide-in-from-bottom-4 duration-500 md:inset-x-auto md:bottom-[5.5rem] md:left-5 md:w-80 dark:shadow-black/40 print:hidden"
+      data-corner-notice
     >
-      <div className="flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-foreground text-background">
-          <HugeiconsIcon icon={CloudDownloadIcon} strokeWidth={2} className="size-5" />
-        </span>
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <h2 className="font-semibold">{progress ? "Saving for offline use…" : "Use wordseed offline?"}</h2>
-          <p className="text-sm text-muted-foreground">
+      <div className="flex items-start gap-2.5">
+        <HugeiconsIcon icon={CloudDownloadIcon} strokeWidth={2} className="size-4 shrink-0" />
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-[0.8rem] leading-snug">
+          <h2 className="font-medium">{progress ? "Saving for offline use…" : "Use wordseed offline?"}</h2>
+          <p className="text-muted-foreground">
             {progress
-              ? "Keep this tab open for a moment. You can carry on using the site."
-              : `Allow this site to save its pages and both models on this device${
-                  size ? ` (about ${megabytes(size)})` : ""
-                }. Everything, generating included, then works without a network. Nothing about you is stored or sent.`}
+              ? "Keep this tab open for a moment; you can carry on using the site."
+              : `Save the pages and both models on this device${size ? ` (about ${megabytes(size)})` : ""}, so everything works without a network.`}
           </p>
         </div>
         {!progress && (
@@ -140,7 +140,7 @@ export function OfflineConsent() {
             type="button"
             aria-label="Not now"
             onClick={declineOffline}
-            className="-mt-1 -mr-1 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="-mt-0.5 -mr-0.5 rounded-md p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} className="size-4" />
           </button>
@@ -148,7 +148,7 @@ export function OfflineConsent() {
       </div>
 
       {progress ? (
-        <div className="mt-4 flex flex-col gap-2">
+        <div className="mt-3 flex flex-col gap-2">
           <div
             className="h-1.5 overflow-hidden rounded-full bg-muted"
             role="progressbar"
@@ -173,15 +173,13 @@ export function OfflineConsent() {
           )}
         </div>
       ) : (
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Button onClick={allow} className="flex-1">
-            <HugeiconsIcon icon={CloudDownloadIcon} strokeWidth={2} />
+        <div className="mt-3 flex gap-2">
+          <Button size="sm" onClick={allow} className="flex-1">
             Allow offline use
           </Button>
-          <Button variant="outline" onClick={declineOffline}>
+          <Button size="sm" variant="outline" onClick={declineOffline} className="flex-1">
             Not now
           </Button>
-          <p className="w-full text-xs text-muted-foreground">You can change this any time in Settings.</p>
         </div>
       )}
     </section>

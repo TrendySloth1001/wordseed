@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { SavedPages } from "./saved-pages";
 
-export const metadata: Metadata = { title: "Offline" };
+export const metadata: Metadata = { title: "Offline", robots: { index: false, follow: false } };
 
 /**
  * Shown by the service worker in place of any page that cannot be loaded:

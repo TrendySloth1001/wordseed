@@ -44,6 +44,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { Engine, Run } from "@/lib/run-types";
 import { apiFetch, offlineChoice } from "@/lib/offline/client";
 import { GenerateIcon, QuillIcon } from "@/components/animated-icons";
+import { acceptTerms, termsAccepted } from "@/lib/consent";
+import { TermsCard } from "@/components/terms-card";
 
 /** "both" runs the two engines on the same request and compares them. */
 type Mode = Engine | "both";
@@ -81,6 +83,9 @@ export function Generator({ initial = {} }: { initial?: InitialSettings }) {
   const [readability, setReadability] = useState(start.readability);
   const [grammar, setGrammar] = useState(start.grammar);
   const [showOptions, setShowOptions] = useState(false);
+  // The words waiting for the visitor to agree to the terms, if any.
+  const [termsFor, setTermsFor] = useState<string[] | null>(null);
+  const generateButton = useRef<HTMLButtonElement>(null);
   const [loading, setLoading] = useState(false);
   const [runs, setRuns] = useState<Run[]>([]);
   const [failure, setFailure] = useState<Failure | null>(null);
@@ -123,6 +128,13 @@ export function Generator({ initial = {} }: { initial?: InitialSettings }) {
   }, [newest]);
 
   async function generate(input: string[]) {
+    // Nothing is generated before the visitor has agreed to the terms: the
+    // terms card pops out instead, and agreeing carries on with these words.
+    if (!termsAccepted()) {
+      setTermsFor(input);
+      return;
+    }
+    setTermsFor(null);
     setLoading(true);
     setFailure(null);
     const engines: Engine[] = engine === "both" ? ["markov", "neural"] : [engine];
@@ -235,6 +247,8 @@ export function Generator({ initial = {} }: { initial?: InitialSettings }) {
                       : "Type one word. Add a second or third, separated by spaces, to get all of them in each sentence."
               }
             >
+              {/* The terms card, when shown, sits beside this on wide screens. */}
+              <div className="relative">
               {/* One bar holding the input and the button. While it has focus, a
                   thin light runs round its border (.word-bar in globals.css). */}
               <div className="word-bar group rounded-2xl p-px">
@@ -272,6 +286,7 @@ export function Generator({ initial = {} }: { initial?: InitialSettings }) {
                     )}
                   </div>
                   <Button
+                    ref={generateButton}
                     type="submit"
                     size="lg"
                     disabled={loading || words.length === 0 || tooMany || Boolean(invalid)}
@@ -289,6 +304,17 @@ export function Generator({ initial = {} }: { initial?: InitialSettings }) {
                         : `Generate ${count} sentence${count === 1 ? "" : "s"}`}
                   </Button>
                 </div>
+              </div>
+                {termsFor && (
+                  <TermsCard
+                    anchor={generateButton}
+                    onAgree={() => {
+                      acceptTerms();
+                      generate(termsFor);
+                    }}
+                    onCancel={() => setTermsFor(null)}
+                  />
+                )}
               </div>
               {words.length > 0 && (
                 // The words every sentence will contain, as you type them.
@@ -311,6 +337,7 @@ export function Generator({ initial = {} }: { initial?: InitialSettings }) {
                   </span>
                 </div>
               )}
+
               {text === "" && (
                 <TryWords
                   onPick={(word) => {

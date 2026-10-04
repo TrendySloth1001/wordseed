@@ -2,6 +2,7 @@
 // that saves the site, and apiFetch, which answers API calls from the offline
 // worker when the server cannot be reached.
 import type { OfflineRequest, OfflineResponse } from "./protocol";
+import { historyAllowed, TERMS_VERSION, termsAccepted } from "../consent-store";
 
 const CHOICE_KEY = "wordseed-offline";
 const LOCAL_RUNS_KEY = "wordseed-offline-runs";
@@ -97,19 +98,27 @@ export function localRunCount(): number {
 
 /** Ids of runs kept in this browser (made offline, or on a host without storage). */
 function localRuns(): Set<string> {
+  let saved: string[] = [];
   try {
-    return new Set(JSON.parse(localStorage.getItem(LOCAL_RUNS_KEY) ?? "[]"));
-  } catch {
-    return new Set();
-  }
+    saved = JSON.parse(localStorage.getItem(LOCAL_RUNS_KEY) ?? "[]");
+  } catch {}
+  return new Set([...saved, ...sessionRuns]);
 }
 
+// Runs kept in memory only, when the visitor said no to keeping History.
+const sessionRuns = new Set<string>();
+
 function rememberLocalRun(id: string) {
-  writeLocalRuns([...localRuns(), id].slice(-50));
+  if (!historyAllowed()) {
+    sessionRuns.add(id);
+    return;
+  }
+  writeLocalRuns([...localRuns()].filter((other) => !sessionRuns.has(other)).concat(id).slice(-50));
 }
 
 function forgetLocalRun(id: string) {
-  writeLocalRuns([...localRuns()].filter((other) => other !== id));
+  sessionRuns.delete(id);
+  writeLocalRuns([...localRuns()].filter((other) => other !== id && !sessionRuns.has(other)));
 }
 
 function writeLocalRuns(ids: string[]) {
@@ -193,6 +202,10 @@ async function answerLocalRun(id: string, path: string, init?: RequestInit): Pro
  * this browser.
  */
 export async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
+  // Generating requires the terms to have been agreed; the server checks for this header.
+  if (path === "/api/generate" && termsAccepted()) {
+    init = { ...init, headers: { ...(init?.headers as Record<string, string>), "X-Terms-Accepted": String(TERMS_VERSION) } };
+  }
   const run = path.match(/^\/api\/runs\/([a-z0-9]+)/)?.[1];
   if (run && localRuns().has(run)) return answerLocalRun(run, path, init);
   let response: Response;

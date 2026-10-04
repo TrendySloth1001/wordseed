@@ -1,11 +1,15 @@
 // Runs kept in this browser (IndexedDB): those made offline, and every run on
 // a host without server storage. Shared by the page and the offline worker.
+// When the visitor said no to keeping History, runs live only in memory and
+// are gone when the tab closes.
+import { historyAllowed } from "../consent-store";
 import type { StoredRun } from "../engine";
 import type { RunListItem } from "../run-types";
 
 const KEEP = 50;
 
 let database: Promise<IDBDatabase> | null = null;
+const memory = new Map<string, StoredRun>();
 
 function open(): Promise<IDBDatabase> {
   database ??= new Promise((resolve, reject) => {
@@ -28,16 +32,21 @@ async function store<T>(mode: IDBTransactionMode, action: (runs: IDBObjectStore)
 
 /** Saves a run, keeping only the most recent ones (ids start with the time). */
 export async function saveLocalRun(stored: StoredRun): Promise<void> {
+  if (!historyAllowed()) {
+    memory.set(stored.run.id, stored);
+    return;
+  }
   await store("readwrite", (runs) => runs.put(stored));
   const ids = (await store("readonly", (runs) => runs.getAllKeys())) as string[];
   for (const id of ids.sort().reverse().slice(KEEP)) await store("readwrite", (runs) => runs.delete(id));
 }
 
-export function getLocalRun(id: string): Promise<StoredRun | undefined> {
-  return store<StoredRun | undefined>("readonly", (runs) => runs.get(id));
+export async function getLocalRun(id: string): Promise<StoredRun | undefined> {
+  return memory.get(id) ?? store<StoredRun | undefined>("readonly", (runs) => runs.get(id));
 }
 
 export async function deleteLocalRun(id: string): Promise<void> {
+  if (memory.delete(id)) return;
   await store("readwrite", (runs) => runs.delete(id));
 }
 
@@ -47,14 +56,15 @@ export async function rateLocalRun(id: string, index: number, rating: 1 | -1 | 0
   if (!stored?.run.sentences[index]) return null;
   if (rating === 0) delete stored.run.ratings[index];
   else stored.run.ratings[index] = rating;
-  await store("readwrite", (runs) => runs.put(stored));
+  if (memory.has(id)) memory.set(id, stored);
+  else await store("readwrite", (runs) => runs.put(stored));
   return stored.run;
 }
 
 /** The runs in this browser as History lists them, newest first. */
 export async function listLocalRuns(): Promise<RunListItem[]> {
-  const all = await store<StoredRun[]>("readonly", (runs) => runs.getAll());
-  return all
+  const saved = historyAllowed() ? await store<StoredRun[]>("readonly", (runs) => runs.getAll()) : [];
+  return [...saved, ...memory.values()]
     .map(({ run }) => {
       const ratings = Object.values(run.ratings);
       return {

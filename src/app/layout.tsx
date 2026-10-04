@@ -1,14 +1,51 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { SiteBrand, SiteNav } from "@/components/site-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { OfflineConsent, OfflineStatus } from "@/components/offline";
 import { Toaster } from "@/components/ui/sonner";
+import { StorageNotice } from "@/components/consent";
+import { AUTHOR, SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: { default: "wordseed", template: "%s · wordseed" },
-  description: "Generate any number of sentences from one to three words with models trained from scratch.",
+  metadataBase: new URL(SITE_URL),
+  title: { default: `${SITE_NAME} · ${SITE_TAGLINE}`, template: `%s · ${SITE_NAME}` },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  authors: [AUTHOR],
+  creator: AUTHOR.name,
+  keywords: [
+    "sentence generator",
+    "example sentences",
+    "sentences with a word",
+    "language model",
+    "n-gram",
+    "Markov chain",
+    "LSTM",
+    "NLP project",
+    "text generation",
+    "suffix array",
+  ],
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    title: `${SITE_NAME} · ${SITE_TAGLINE}`,
+    description: SITE_DESCRIPTION,
+    url: "/",
+    locale: "en_GB",
+  },
+  twitter: { card: "summary_large_image", title: `${SITE_NAME} · ${SITE_TAGLINE}`, description: SITE_DESCRIPTION },
+  robots: { index: true, follow: true },
+  category: "education",
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -31,6 +68,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <SiteFooter />
           </div>
           <SiteNav />
+          <StorageNotice />
           <OfflineConsent />
           <Toaster position="bottom-center" mobileOffset={{ bottom: 96 }} />
         </Providers>

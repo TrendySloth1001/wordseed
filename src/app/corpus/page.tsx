@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 import { READ_ONLY } from "@/lib/deployment";
 import { CorpusManager } from "./corpus-manager";
 
-export const metadata: Metadata = { title: "Corpus" };
+export const metadata: Metadata = {
+  title: "Corpus",
+  description:
+    "The texts wordseed learned from: 17 public-domain novels and Simple English Wikipedia, with live statistics on sentences, words and their frequencies.",
+  alternates: { canonical: "/corpus" },
+};
 
 export default function CorpusPage() {
   return (

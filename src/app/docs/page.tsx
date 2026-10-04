@@ -23,7 +23,9 @@ import { JumpGrid, Toc } from "./toc";
 
 export const metadata: Metadata = {
   title: "How it works",
-  description: "The mathematics and the code behind the sentence generator.",
+  description:
+    "How wordseed works, explained by its student author: n-gram language models, suffix arrays, an LSTM that writes in both directions, perplexity, and the bloopers along the way.",
+  alternates: { canonical: "/docs" },
 };
 
 const CC_BY_SA_4 = "https://creativecommons.org/licenses/by-sa/4.0/";

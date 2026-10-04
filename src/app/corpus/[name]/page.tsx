@@ -15,7 +15,15 @@ import {
 } from "@/lib/source-reader";
 import { ScrollToMatch } from "./scroll-to-match";
 
-export const metadata: Metadata = { title: "Source" };
+export async function generateMetadata(props: PageProps<"/corpus/[name]">): Promise<Metadata> {
+  const name = decodeURIComponent((await props.params).name);
+  const title = sourceTitle(name);
+  return {
+    title,
+    description: `Read ${title}, one of the texts the wordseed language models were trained on, and find where any phrase came from.`,
+    alternates: { canonical: `/corpus/${encodeURIComponent(name)}` },
+  };
+}
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
 

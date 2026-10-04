@@ -588,3 +588,33 @@
     background: var(--foreground);
   }
 }
+
+/* The terms card pops out of the word bar with a little spring. */
+@keyframes terms-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.86);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(0) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [class*="animate-[terms-pop"] {
+    animation: none !important;
+  }
+}
+
+/* While a corner notice (storage or offline) is showing on a phone, the footer
+   leaves room underneath, so scrolling to the end shows it above the notice.
+   On larger screens the notice floats above the footer line instead. */
+@media (max-width: 47.99rem) {
+  body:has([data-corner-notice]) footer {
+    padding-bottom: 10rem;
+  }
+}

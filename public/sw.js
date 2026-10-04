@@ -12,7 +12,7 @@ const ASSETS = "wordseed-assets";
 const DATA = "wordseed-data";
 const META = "wordseed-meta";
 // /runs/local shows any run kept in the browser, so one saved copy serves them all offline.
-const MAIN_PAGES = ["/", "/runs", "/runs/local", "/corpus", "/docs", "/offline"];
+const MAIN_PAGES = ["/", "/runs", "/runs/local", "/corpus", "/docs", "/terms", "/privacy", "/offline"];
 const RESAVE_AFTER = 24 * 60 * 60 * 1000;
 
 self.addEventListener("install", () => self.skipWaiting());

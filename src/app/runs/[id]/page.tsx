@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getRun } from "@/lib/runs";
 import { LocalRun, RunPageBody } from "./run-page-body";
 
-export const metadata: Metadata = { title: "Saved run" };
+export const metadata: Metadata = { title: "Saved run", robots: { index: false, follow: false } };
 
 export default async function RunPage(props: PageProps<"/runs/[id]">) {
   const { id } = await props.params;

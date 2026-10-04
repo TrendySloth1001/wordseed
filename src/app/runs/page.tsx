@@ -4,7 +4,8 @@ import { READ_ONLY } from "@/lib/deployment";
 import { listRuns } from "@/lib/runs";
 import { RunList } from "./run-list";
 
-export const metadata: Metadata = { title: "History" };
+// Each visitor's own runs: nothing for search engines here.
+export const metadata: Metadata = { title: "History", robots: { index: false, follow: true } };
 
 export default async function RunsPage() {
   // The list changes with every generation, so render it per request.

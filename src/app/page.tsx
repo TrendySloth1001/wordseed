@@ -1,4 +1,20 @@
+import { AUTHOR, REPOSITORY, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import { Generator, type InitialSettings } from "./generator";
+
+const STRUCTURED_DATA = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: SITE_NAME,
+  url: SITE_URL,
+  description: SITE_DESCRIPTION,
+  applicationCategory: "EducationalApplication",
+  operatingSystem: "Any",
+  isAccessibleForFree: true,
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  author: { "@type": "Person", name: AUTHOR.name, url: AUTHOR.url },
+  codeRepository: REPOSITORY,
+  inLanguage: "en",
+};
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
 
@@ -27,6 +43,11 @@ export default async function Home(props: PageProps<"/">) {
 
   return (
     <main className="mx-auto w-full max-w-[90rem] flex-1 px-4 py-6 sm:py-10 lg:py-0">
+      {/* Structured data: tells search engines what this site is. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA).replace(/</g, "\\u003c") }}
+      />
       <Generator initial={initial} />
     </main>
   );
