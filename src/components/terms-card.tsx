@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { DocumentValidationIcon, Alert02Icon, Shield01Icon, SparklesIcon } from "@hugeicons/core-free-icons";
-import { GenerateIcon } from "@/components/animated-icons";
+import { Alert02Icon, DocumentValidationIcon, Shield01Icon, SparklesIcon, Tick02Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 
 const POINTS = [
@@ -95,7 +94,7 @@ export function TermsCard({
       </ul>
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <Button ref={agree} type="button" className="group" onClick={onAgree}>
-          <GenerateIcon className="size-4" />
+          <HugeiconsIcon icon={Tick02Icon} strokeWidth={2.5} className="size-4" />
           Agree &amp; generate
         </Button>
         <Button type="button" variant="ghost" onClick={onCancel}>
