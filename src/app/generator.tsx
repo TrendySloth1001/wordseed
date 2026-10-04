@@ -10,7 +10,7 @@ import {
   Cancel01Icon,
   GitBranchIcon,
   GitCompareIcon,
-  HashtagIcon,
+  LeftToRightListNumberIcon,
   MinusSignIcon,
   PlusSignIcon,
   Idea01Icon,
@@ -356,7 +356,7 @@ export function Generator({ initial = {} }: { initial?: InitialSettings }) {
             </Field>
 
             <Field
-              icon={HashtagIcon}
+              icon={LeftToRightListNumberIcon}
               label="How many sentences"
               htmlFor="count"
               hint={`Pick a preset or type any number from 1 to ${maxCount.toLocaleString("en")}.`}
