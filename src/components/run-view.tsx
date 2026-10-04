@@ -66,16 +66,7 @@ export function engineName(run: Pick<Run, "engine">): string {
   return run.engine === "markov" ? "Markov" : "Neural";
 }
 
-export function RunView({
-  run,
-  onPickWord,
-  compact = false,
-}: {
-  run: Run;
-  onPickWord?: (word: string) => void;
-  /** half-width, next to the other model's run: icon-only buttons */
-  compact?: boolean;
-}) {
+export function RunView({ run, onPickWord }: { run: Run; onPickWord?: (word: string) => void }) {
   const [ratings, setRatings] = useState(run.ratings);
   const [open, setOpen] = useState<number | null>(null);
   const [profiled, setProfiled] = useState(run.words[0]);
@@ -145,33 +136,25 @@ export function RunView({
 
   return (
     <section className="flex min-w-0 flex-col gap-4">
-      <div className={`flex items-center justify-between gap-3 ${compact ? "" : "flex-wrap"}`}>
-        <h2 className={`font-medium ${compact ? "min-w-0 truncate" : ""}`}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-medium">
           {run.sentences.length} sentence{run.sentences.length === 1 ? "" : "s"}
           <span className="font-normal text-muted-foreground"> · {engineName(run)} model</span>
         </h2>
         {run.sentences.length > 0 && (
-          <div className="flex shrink-0 gap-2">
-            {(
-              [
-                [Copy01Icon, "Copy all", "Copy every sentence", copyAll],
-                [Txt01Icon, "TXT", "Download as a text file", () => download("txt")],
-                [Csv01Icon, "CSV", "Download as a spreadsheet", () => download("csv")],
-              ] as const
-            ).map(([icon, label, title, action]) => (
-              <Button
-                key={label}
-                type="button"
-                variant="outline"
-                size={compact ? "icon-lg" : "lg"}
-                onClick={action}
-                aria-label={compact ? title : undefined}
-                title={compact ? title : undefined}
-              >
-                <HugeiconsIcon icon={icon} strokeWidth={2} className="size-5" />
-                {!compact && label}
-              </Button>
-            ))}
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" size="lg" onClick={copyAll}>
+              <HugeiconsIcon icon={Copy01Icon} strokeWidth={2} className="size-5" />
+              Copy all
+            </Button>
+            <Button type="button" variant="outline" size="lg" onClick={() => download("txt")}>
+              <HugeiconsIcon icon={Txt01Icon} strokeWidth={2} className="size-5" />
+              TXT
+            </Button>
+            <Button type="button" variant="outline" size="lg" onClick={() => download("csv")}>
+              <HugeiconsIcon icon={Csv01Icon} strokeWidth={2} className="size-5" />
+              CSV
+            </Button>
           </div>
         )}
       </div>
@@ -204,7 +187,7 @@ export function RunView({
             <div className="flex flex-wrap items-center gap-2">
               <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <HugeiconsIcon icon={Sorting01Icon} strokeWidth={2} className="size-5" />
-                <span className={compact ? "sr-only" : undefined}>Order</span>
+                Order
               </span>
               <ToggleGroup
                 type="single"
@@ -286,7 +269,7 @@ export function RunView({
                     onClick={() => setOpen(open === index ? null : index)}
                     className="px-2"
                   >
-                    <span className={compact ? "sr-only" : "max-sm:hidden"}>Explain</span>
+                    <span className="max-sm:hidden">Explain</span>
                     <HugeiconsIcon
                       icon={open === index ? ArrowUp01Icon : ArrowDown01Icon}
                       strokeWidth={2}
@@ -296,7 +279,7 @@ export function RunView({
                 </div>
                 {open === index && (
                   <div className="flex flex-col gap-4 border-t px-3 py-4 sm:px-4">
-                    <TileTable columns={compact ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-4"}>
+                    <TileTable columns="grid-cols-2 sm:grid-cols-4">
                       <Tile
                         bare
                         icon={Analytics01Icon}
@@ -344,7 +327,7 @@ export function RunView({
         </TabsContent>
 
         <TabsContent value="summary" className="flex flex-col gap-5 pt-2">
-          <TileTable columns={compact ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-3"}>
+          <TileTable columns="grid-cols-2 sm:grid-cols-3">
             <Tile bare icon={RulerIcon} label="Average length" value={`${summary.averageWords} words`} />
             <Tile
               bare

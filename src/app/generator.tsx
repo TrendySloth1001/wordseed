@@ -611,10 +611,7 @@ export function Generator({ initial = {} }: { initial?: InitialSettings }) {
             }`}
           >
             {runs.length === 2 ? (
-              <>
-                <Comparison runs={runs} />
-                <SideBySide runs={runs} onPickWord={pickWord} />
-              </>
+              <Comparison runs={runs} onPickWord={pickWord} />
             ) : (
               runs.map((run) => <RunView key={run.id} run={run} onPickWord={pickWord} />)
             )}
@@ -626,46 +623,13 @@ export function Generator({ initial = {} }: { initial?: InitialSettings }) {
 }
 
 /**
- * The two engines' sentences next to each other when there is room; on a
- * narrower screen, one at a time with a switch between them.
+ * Compare mode: the two engines' numbers side by side, then one engine's
+ * sentences at a time, full width. Picking a model (the switch, or its column
+ * in the table) swaps the list; both stay mounted so each keeps its order,
+ * open explanations and tab.
  */
-function SideBySide({ runs, onPickWord }: { runs: Run[]; onPickWord: (word: string) => void }) {
+function Comparison({ runs, onPickWord }: { runs: Run[]; onPickWord: (word: string) => void }) {
   const [shown, setShown] = useState(runs[0].id);
-  return (
-    <div className="@container flex flex-col gap-4">
-      <ToggleGroup
-        type="single"
-        variant="outline"
-        size="lg"
-        spacing={0}
-        value={shown}
-        onValueChange={(value) => value && setShown(value)}
-        className="w-full @2xl:hidden"
-      >
-        {runs.map((run) => (
-          <ToggleGroupItem
-            key={run.id}
-            value={run.id}
-            className="flex-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-          >
-            <HugeiconsIcon icon={MODE_ICONS[run.engine]} strokeWidth={2} className="size-4" />
-            {engineName(run)}
-          </ToggleGroupItem>
-        ))}
-      </ToggleGroup>
-      <div className="grid gap-6 @2xl:grid-cols-2 @2xl:gap-4">
-        {runs.map((run) => (
-          <div key={run.id} className={`min-w-0 ${run.id === shown ? "" : "hidden @2xl:block"}`}>
-            <RunView run={run} onPickWord={onPickWord} compact />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/** The two engines' numbers for the same request, side by side. */
-function Comparison({ runs }: { runs: Run[] }) {
   const rows: [string, (run: Run) => string][] = [
     ["Sentences returned", (run) => String(run.sentences.length)],
     ["Average length", (run) => `${run.summary.averageWords} words`],
@@ -682,33 +646,84 @@ function Comparison({ runs }: { runs: Run[] }) {
           : `${Math.round((run.summary.funnel.accepted / run.summary.funnel.sampled) * 100)}%`,
     ],
   ];
+  // The selected engine's column is tinted, so the table reads as part of the switch.
+  const tint = (run: Run) => (run.id === shown ? "bg-muted/60" : "");
   return (
-    <div className="w-full rounded-lg border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Same request, both models</TableHead>
-            {runs.map((run) => (
-              <TableHead key={run.id} className="text-right">
-                {engineName(run)}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map(([label, value]) => (
-            <TableRow key={label}>
-              <TableCell className="whitespace-normal">{label}</TableCell>
+    <>
+      <div className="w-full overflow-hidden rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="whitespace-normal">Same request, both models</TableHead>
               {runs.map((run) => (
-                <TableCell key={run.id} className="text-right tabular-nums">
-                  {value(run)}
-                </TableCell>
+                <TableHead key={run.id} className={`p-0 text-right transition-colors ${tint(run)}`}>
+                  <button
+                    type="button"
+                    onClick={() => setShown(run.id)}
+                    aria-pressed={run.id === shown}
+                    title={`Show the ${engineName(run)} sentences`}
+                    className="size-full px-2 text-right font-medium text-muted-foreground transition-colors hover:text-foreground aria-pressed:text-foreground"
+                  >
+                    {engineName(run)}
+                  </button>
+                </TableHead>
               ))}
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody>
+            {rows.map(([label, value]) => (
+              <TableRow key={label} className="hover:bg-transparent">
+                <TableCell className="whitespace-normal">{label}</TableCell>
+                {runs.map((run) => (
+                  <TableCell key={run.id} className={`text-right tabular-nums transition-colors max-sm:px-2 ${tint(run)}`}>
+                    {value(run)}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div role="radiogroup" aria-label="Whose sentences to show" className="grid grid-cols-2 gap-1 rounded-xl border bg-muted/40 p-1">
+        {runs.map((run) => {
+          const on = run.id === shown;
+          return (
+            <button
+              key={run.id}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => setShown(run.id)}
+              className={`group flex min-w-0 items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-all ${
+                on ? "bg-background shadow-sm ring-1 ring-border" : "text-muted-foreground hover:bg-background/50 hover:text-foreground"
+              }`}
+            >
+              <span
+                className={`grid size-9 shrink-0 place-items-center rounded-md border transition-colors ${
+                  on ? "border-foreground bg-foreground text-background" : ""
+                }`}
+              >
+                <HugeiconsIcon icon={MODE_ICONS[run.engine]} strokeWidth={2} className="size-5" />
+              </span>
+              <span className="flex min-w-0 flex-col">
+                <span className="font-medium">{engineName(run)}</span>
+                <span className="truncate text-xs text-muted-foreground">
+                  {run.sentences.length} sentences
+                  <span className="max-sm:hidden"> · {run.summary.averageWords} words on average</span>
+                </span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {runs.map((run) => (
+        <div key={run.id} hidden={run.id !== shown} className="animate-in fade-in duration-300 motion-reduce:animate-none">
+          <RunView run={run} onPickWord={onPickWord} />
+        </div>
+      ))}
+    </>
   );
 }
 
