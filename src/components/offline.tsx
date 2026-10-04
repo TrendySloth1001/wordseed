@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Cancel01Icon,
-  CloudDownloadIcon,
   RefreshIcon,
   WifiDisconnected01Icon,
 } from "@hugeicons/core-free-icons";
@@ -20,6 +19,7 @@ import {
   type SaveProgress,
 } from "@/lib/offline/client";
 import { useStorageChoice } from "@/lib/consent";
+import { CloudIcon } from "@/components/animated-icons";
 
 const CONNECTION_EVENTS = ["online", "offline", "wordseed-server"];
 
@@ -126,7 +126,7 @@ export function OfflineConsent() {
       data-corner-notice
     >
       <div className="flex items-start gap-2.5">
-        <HugeiconsIcon icon={CloudDownloadIcon} strokeWidth={2} className="size-4 shrink-0" />
+        <CloudIcon className="size-4 shrink-0" />
         <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-[0.8rem] leading-snug">
           <h2 className="font-medium">{progress ? "Saving for offline use…" : "Use wordseed offline?"}</h2>
           <p className="text-muted-foreground">

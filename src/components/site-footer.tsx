@@ -91,6 +91,16 @@ function Author() {
   const user = useGitHub<User>(`users/${LOGIN}`);
   const [avatarFailed, setAvatarFailed] = useState(false);
   const initials = AUTHOR.split(" ").map((part) => part[0]).join("");
+  // The corner notices move up by exactly the card's height while it is open.
+  useEffect(() => {
+    const card = document.querySelector<HTMLElement>("[data-author-card]");
+    if (!card) return;
+    const measure = () => document.documentElement.style.setProperty("--author-card-height", `${card.offsetHeight + 8}px`);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(card);
+    return () => observer.disconnect();
+  }, []);
   const stats = user
     ? [
         [user.public_repos, "repos"],
@@ -110,7 +120,7 @@ function Author() {
         {AUTHOR}
       </a>
       {/* The bottom padding bridges the gap, so the pointer can move up into the card. */}
-      <span className="pointer-events-none absolute inset-x-4 bottom-full z-40 translate-y-1 pb-3 opacity-0 transition-all duration-200 group-hover/author:pointer-events-auto group-hover/author:translate-y-0 group-hover/author:opacity-100 group-has-focus-visible/author:pointer-events-auto group-has-focus-visible/author:translate-y-0 group-has-focus-visible/author:opacity-100 sm:inset-x-auto sm:left-1/2 sm:w-72 sm:-translate-x-1/2">
+      <span data-author-card className="pointer-events-none absolute inset-x-4 bottom-full z-40 translate-y-1 pb-3 opacity-0 transition-all duration-200 group-hover/author:pointer-events-auto group-hover/author:translate-y-0 group-hover/author:opacity-100 group-has-focus-visible/author:pointer-events-auto group-has-focus-visible/author:translate-y-0 group-has-focus-visible/author:opacity-100 sm:inset-x-auto sm:left-1/2 sm:w-72 sm:-translate-x-1/2">
         <a
           href={PROFILE}
           tabIndex={-1}

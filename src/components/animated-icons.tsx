@@ -129,3 +129,73 @@ export function StarBurstIcon(props: IconProps) {
     </Svg>
   );
 }
+
+/** Light theme: the rays turn and pulse round a steady sun. */
+export function SunIcon(props: IconProps) {
+  return (
+    <Svg name="sun" {...props}>
+      <path d="M17 12C17 14.7614 14.7614 17 12 17C9.23858 17 7 14.7614 7 12C7 9.23858 9.23858 7 12 7C14.7614 7 17 9.23858 17 12Z" />
+      <path
+        className="ai-part ai-rays-sun"
+        d="M12 2V3.5M12 20.5V22M19.0708 19.0713L18.0101 18.0106M5.98926 5.98926L4.9286 4.9286M22 12H20.5M3.5 12H2M19.0713 4.92871L18.0106 5.98937M5.98975 18.0107L4.92909 19.0714"
+      />
+    </Svg>
+  );
+}
+
+/** Dark theme: the moon rocks while two small stars twinkle beside it. */
+export function MoonIcon(props: IconProps) {
+  return (
+    <Svg name="moon" {...props}>
+      <path
+        className="ai-part ai-moon"
+        d="M21.5 14.0784C20.3003 14.7189 18.9301 15.0821 17.4751 15.0821C12.7491 15.0821 8.91792 11.2509 8.91792 6.52485C8.91792 5.06986 9.28105 3.69968 9.92163 2.5C5.66765 3.49698 2.5 7.31513 2.5 11.8731C2.5 17.1899 6.8101 21.5 12.1269 21.5C16.6849 21.5 20.503 18.3324 21.5 14.0784Z"
+      />
+      <path className="ai-part ai-twinkle" d="M17 3.5v2M16 4.5h2" />
+      <path className="ai-part ai-twinkle ai-twinkle-2" d="M20.5 8v1.6M19.7 8.8h1.6" />
+    </Svg>
+  );
+}
+
+/** System theme: the screen flickers on, half light, half dark. */
+export function SystemIcon(props: IconProps) {
+  return (
+    <Svg name="system" {...props}>
+      <path d="M16 3H8C5.17157 3 3.75736 3 2.87868 3.87868C2 4.75736 2 6.17157 2 9V11C2 13.8284 2 15.2426 2.87868 16.1213C3.75736 17 5.17157 17 8 17H16C18.8284 17 20.2426 17 21.1213 16.1213C22 15.2426 22 13.8284 22 11V9C22 6.17157 22 4.75736 21.1213 3.87868C20.2426 3 18.8284 3 16 3Z" />
+      <path d="M8 21H16M12 17V21" />
+      <path className="ai-part ai-screen" d="M12 6.5V13.5" />
+      <path className="ai-part ai-screen-fill" d="M12.8 6.6C14.6 6.9 16 8.3 16 10S14.6 13.1 12.8 13.4Z" fill="currentColor" stroke="none" />
+    </Svg>
+  );
+}
+
+/** Offline: the cloud floats; saved, its tick draws itself, otherwise the arrow drops in. */
+export function CloudIcon({ saved, ...props }: IconProps & { saved?: boolean }) {
+  return (
+    <Svg name="cloud" {...props}>
+      <path
+        className="ai-part ai-cloud"
+        d="M17.4776 9.01106C17.485 9.01102 17.4925 9.01101 17.5 9.01101C19.9853 9.01101 22 11.0294 22 13.5193C22 15.8398 20.25 17.7508 18 18M17.4776 9.01106C17.4924 8.84606 17.5 8.67896 17.5 8.51009C17.5 5.46695 15.0376 3 12 3C9.12324 3 6.76233 5.21267 6.52042 8.03192M17.4776 9.01106C17.3753 10.1476 16.9286 11.1846 16.2428 12.0165M6.52042 8.03192C3.98398 8.27373 2 10.4139 2 13.0183C2 15.4417 3.71776 17.4632 6 17.9273M6.52042 8.03192C6.67826 8.01687 6.83823 8.00917 7 8.00917C8.12582 8.00917 9.16474 8.38194 10.0005 9.01101"
+      />
+      {saved ? (
+        <path className="ai-part ai-tick" pathLength={1} d="M9 19C9 19 10 19 11 21C11 21 14.1765 16 17 15" />
+      ) : (
+        <path className="ai-part ai-arrow" d="M12 21L12 13M12 21C11.2998 21 9.99153 19.0057 9.5 18.5M12 21C12.7002 21 14.0085 19.0057 14.5 18.5" />
+      )}
+    </Svg>
+  );
+}
+
+/** Cookies: always gently alive, wobbling while crumbs drop off it. */
+export function CookieIcon(props: IconProps) {
+  return (
+    <Svg name="cookie" {...props}>
+      <g className="ai-part ai-cookie">
+        <path d="M12.0579 22C16.9725 22 21.0638 18.4937 21.9416 13.8586C22.1996 12.4967 21.5931 12.5686 20.3101 12.3438C19.3996 12.1844 18.5498 11.5667 18.2333 10.588C18.0178 9.9216 17.9376 9.89475 17.2352 9.86554C15.7861 9.80529 14.625 8.2689 15.2032 7.02602C15.419 6.56236 15.412 6.50892 15.0078 6.19448C14.3005 5.6443 13.9706 4.6166 14.0978 3.62604C14.2347 2.5591 14.3147 2.1747 13.1854 2.05455C7.45657 1.44501 2 6.0196 2 11.9948C2 17.5205 6.50308 22 12.0579 22Z" />
+        <path d="M12.0078 18L11.9988 18M10 6L9 7M17 14L16 15M7 15L8 16M11 12h.01M6 10h.01" />
+      </g>
+      <path className="ai-part ai-crumb" d="M19 7.5h.01" />
+      <path className="ai-part ai-crumb ai-crumb-2" d="M21 5h.01" />
+    </Svg>
+  );
+}

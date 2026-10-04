@@ -9,8 +9,9 @@ import { useChoice } from "@/components/offline";
 import { SettingsDialog, THEMES } from "@/components/settings";
 import { offlineSupported, saveForOffline, type SaveProgress } from "@/lib/offline/client";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { CloudDownloadIcon, CloudSavingDone01Icon, Settings01Icon } from "@hugeicons/core-free-icons";
+import { Settings01Icon } from "@hugeicons/core-free-icons";
 import { CorpusIcon, DocsIcon, GenerateIcon, HistoryIcon, QuillIcon } from "@/components/animated-icons";
+import { CloudIcon } from "@/components/animated-icons";
 
 // Icons whose parts animate on hover and when their page becomes current:
 // sparkles pop, clock hands sweep, a book drops onto the stack, a page turns.
@@ -224,11 +225,11 @@ function SettingsLauncher({ active, onOpen }: { active: boolean; onOpen: () => v
                   aria-label={`${option.label} theme`}
                   title={option.label}
                   onClick={() => setTheme(option.value)}
-                  className={`flex size-8 items-center justify-center rounded-full transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  className={`group flex size-8 items-center justify-center rounded-full transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                     selected ? "bg-foreground text-background" : "text-muted-foreground hover:bg-background hover:text-foreground"
                   }`}
                 >
-                  <HugeiconsIcon icon={option.icon} strokeWidth={2} className="size-4" />
+                  <option.Icon className="size-4" />
                 </button>
               );
             })}
@@ -241,7 +242,7 @@ function SettingsLauncher({ active, onOpen }: { active: boolean; onOpen: () => v
                 type="button"
                 onClick={saveOffline}
                 disabled={progress !== null}
-                className={`relative flex h-9 items-center gap-1.5 overflow-hidden rounded-full px-3 text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                className={`group relative flex h-9 items-center gap-1.5 overflow-hidden rounded-full px-3 text-sm font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                   saved ? "text-foreground hover:bg-muted" : "bg-foreground text-background hover:bg-foreground/85"
                 }`}
               >
@@ -252,11 +253,7 @@ function SettingsLauncher({ active, onOpen }: { active: boolean; onOpen: () => v
                     aria-hidden
                   />
                 )}
-                <HugeiconsIcon
-                  icon={saved ? CloudSavingDone01Icon : CloudDownloadIcon}
-                  strokeWidth={2}
-                  className="relative size-4"
-                />
+                <CloudIcon saved={saved} className="relative size-4" />
                 <span className="relative tabular-nums">
                   {progress ? `Saving ${share}%` : saved ? "Saved offline" : "Save offline"}
                 </span>

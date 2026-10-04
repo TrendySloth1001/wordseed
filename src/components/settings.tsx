@@ -7,11 +7,7 @@ import { toast } from "sonner";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ArrowRight01Icon,
-  CookieIcon,
-  ComputerIcon,
-  Moon02Icon,
   RefreshIcon,
-  Sun03Icon,
   Wifi01Icon,
   WifiDisconnected01Icon,
 } from "@hugeicons/core-free-icons";
@@ -29,11 +25,12 @@ import {
   type SavedCopy,
   type SaveProgress,
 } from "@/lib/offline/client";
+import { CookieIcon, MoonIcon, SunIcon, SystemIcon } from "@/components/animated-icons";
 
 export const THEMES = [
-  { value: "light", label: "Light", icon: Sun03Icon },
-  { value: "dark", label: "Dark", icon: Moon02Icon },
-  { value: "system", label: "System", icon: ComputerIcon },
+  { value: "light", label: "Light", Icon: SunIcon },
+  { value: "dark", label: "Dark", Icon: MoonIcon },
+  { value: "system", label: "System", Icon: SystemIcon },
 ];
 
 /** Appearance and offline use: what is saved on this device, and a switch for it. */
@@ -105,11 +102,11 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenCh
                   role="radio"
                   aria-checked={selected}
                   onClick={() => setTheme(option.value)}
-                  className={`flex items-center justify-center gap-1.5 rounded-md py-1.5 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  className={`group flex items-center justify-center gap-1.5 rounded-md py-1.5 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                     selected ? "bg-foreground text-background" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
                 >
-                  <HugeiconsIcon icon={option.icon} strokeWidth={2} className="size-4" />
+                  <option.Icon className="size-4" />
                   {option.label}
                 </button>
               );
@@ -208,7 +205,7 @@ function PrivacySettings({ onNavigate }: { onNavigate: () => void }) {
   return (
     <section className="flex flex-col gap-3">
       <h3 className="flex items-center gap-2 text-sm font-medium">
-        <HugeiconsIcon icon={CookieIcon} strokeWidth={2} className="size-4" />
+        <CookieIcon className="size-4" />
         Privacy &amp; cookies
       </h3>
       <ul className="divide-y overflow-hidden rounded-xl border text-sm">

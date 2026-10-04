@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { CookieIcon } from "@hugeicons/core-free-icons";
+import { CookieIcon } from "@/components/animated-icons";
 import { Button } from "@/components/ui/button";
 import { saveStorageChoice, useStorageChoice } from "@/lib/consent";
 
@@ -27,7 +26,7 @@ export function StorageNotice() {
       className="fixed inset-x-3 bottom-[calc(max(0.75rem,env(safe-area-inset-bottom))+4.75rem)] z-40 flex flex-col gap-3 rounded-2xl border bg-background/95 p-3.5 shadow-xl shadow-black/10 backdrop-blur-md animate-in fade-in slide-in-from-bottom-4 duration-500 md:inset-x-auto md:bottom-[5.5rem] md:left-5 md:w-80 dark:shadow-black/40 print:hidden"
     >
       <p className="flex gap-2.5 text-[0.8rem] leading-snug">
-        <HugeiconsIcon icon={CookieIcon} strokeWidth={2} className="size-4 shrink-0" />
+        <CookieIcon className="size-4 shrink-0" />
         <span>
           No cookies here. Your browser keeps your theme, and with your OK, your History and the GitHub info in the
           footer.{" "}

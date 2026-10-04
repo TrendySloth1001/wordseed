@@ -618,3 +618,164 @@
     padding-bottom: 10rem;
   }
 }
+
+/* Theme, offline and cookie icons (animated-icons.tsx). The theme and cloud
+   icons play on hover of their button and when selected; the cookie loops. */
+.ai .ai-rays-sun,
+.ai .ai-moon {
+  transform-origin: 12px 12px;
+}
+.ai .ai-twinkle {
+  opacity: 0;
+  transform-origin: 17px 4.5px;
+}
+.ai .ai-twinkle-2 {
+  transform-origin: 20.5px 8.8px;
+}
+.ai .ai-screen-fill {
+  opacity: 0.85;
+}
+.ai .ai-tick {
+  stroke-dasharray: 1;
+}
+.ai .ai-cookie {
+  transform-origin: 12px 12px;
+}
+.ai .ai-crumb {
+  opacity: 0;
+}
+:is(.group:hover, .group:focus-visible, [aria-checked="true"]) .ai-sun .ai-rays-sun {
+  animation: ai-sun 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+:is(.group:hover, .group:focus-visible, [aria-checked="true"]) .ai-moon .ai-moon {
+  animation: ai-rock 0.9s ease-in-out;
+}
+:is(.group:hover, .group:focus-visible, [aria-checked="true"]) .ai-moon .ai-twinkle {
+  animation: ai-glint 0.8s 0.1s ease-out both;
+}
+:is(.group:hover, .group:focus-visible, [aria-checked="true"]) .ai-moon .ai-twinkle-2 {
+  animation-delay: 0.35s;
+}
+:is(.group:hover, .group:focus-visible, [aria-checked="true"]) .ai-system .ai-screen-fill {
+  animation: ai-flicker 0.7s steps(1, end);
+}
+:is(.group:hover, .group:focus-visible) .ai-cloud .ai-cloud {
+  animation: ai-float 1s ease-in-out;
+}
+:is(.group:hover, .group:focus-visible) .ai-cloud .ai-tick {
+  animation: ai-draw 0.6s 0.2s ease-out both;
+}
+:is(.group:hover, .group:focus-visible) .ai-cloud .ai-arrow {
+  animation: ai-drop 0.8s ease-in-out;
+}
+.ai-cookie .ai-cookie {
+  animation: ai-cookie 2.8s ease-in-out infinite;
+}
+.ai-cookie .ai-crumb {
+  animation: ai-crumb 2.8s ease-in infinite;
+}
+.ai-cookie .ai-crumb-2 {
+  animation-delay: 1.4s;
+}
+@keyframes ai-sun {
+  0% {
+    transform: rotate(0) scale(1);
+  }
+  50% {
+    transform: rotate(45deg) scale(1.15);
+  }
+  100% {
+    /* Eight rays: a 45° turn looks the same as none. */
+    transform: rotate(45deg) scale(1);
+  }
+}
+@keyframes ai-rock {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  30% {
+    transform: rotate(-18deg);
+  }
+  65% {
+    transform: rotate(8deg);
+  }
+}
+@keyframes ai-flicker {
+  0%,
+  30%,
+  60% {
+    opacity: 0;
+  }
+  15%,
+  45%,
+  100% {
+    opacity: 0.85;
+  }
+}
+@keyframes ai-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1.5px);
+  }
+}
+@keyframes ai-drop {
+  0% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-4px);
+    opacity: 0;
+  }
+  41% {
+    transform: translateY(-6px);
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes ai-cookie {
+  0%,
+  60%,
+  100% {
+    transform: rotate(0);
+  }
+  70% {
+    transform: rotate(-10deg);
+  }
+  80% {
+    transform: rotate(7deg);
+  }
+  90% {
+    transform: rotate(-3deg);
+  }
+}
+@keyframes ai-crumb {
+  0%,
+  62% {
+    opacity: 0;
+    transform: translate(0, 0);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(1px, 9px);
+  }
+}
+
+/* While the author's profile card is open in the footer, the corner notices
+   slide up out of its way instead of covering it. */
+[data-corner-notice] {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (min-width: 48rem) {
+  body:has(.group\/author:hover, .group\/author:focus-within) [data-corner-notice] {
+    transform: translateY(calc(-1 * var(--author-card-height, 15rem)));
+  }
+}
