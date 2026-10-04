@@ -17,7 +17,6 @@ import {
   RulerIcon,
   ShuffleIcon,
   SlidersHorizontalIcon,
-  SparklesIcon,
   SpellCheckIcon,
   TextAlignCenterIcon,
   TextAlignLeftIcon,
@@ -44,6 +43,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { Engine, Run } from "@/lib/run-types";
 import { apiFetch, offlineChoice } from "@/lib/offline/client";
+import { GenerateIcon } from "@/components/animated-icons";
 
 /** "both" runs the two engines on the same request and compares them. */
 type Mode = Engine | "both";
@@ -198,7 +198,7 @@ export function Generator({ initial = {} }: { initial?: InitialSettings }) {
         // instead of squeezing it and cutting its content off.
         className={`@container flex w-full shrink-0 flex-col gap-6 *:shrink-0 lg:w-[28rem] lg:px-1 lg:py-10 xl:w-[34rem] ${
           split
-            ? "lg:sticky lg:top-14 lg:max-h-[calc(100dvh-3.5rem)] lg:overflow-y-auto lg:[scrollbar-width:none] lg:[&::-webkit-scrollbar]:hidden"
+            ? "lg:sticky lg:top-16 lg:max-h-[calc(100dvh-4rem)] lg:overflow-y-auto lg:[scrollbar-width:none] lg:[&::-webkit-scrollbar]:hidden"
             : ""
         }`}
       >
@@ -265,13 +265,13 @@ export function Generator({ initial = {} }: { initial?: InitialSettings }) {
                   type="submit"
                   size="lg"
                   disabled={loading || words.length === 0 || tooMany || Boolean(invalid)}
-                  className="h-12 px-5 text-base @xl:min-w-52"
+                  className="group h-12 px-5 text-base @xl:min-w-52"
                 >
-                  <HugeiconsIcon
-                    icon={loading ? Loading03Icon : SparklesIcon}
-                    strokeWidth={2}
-                    className={loading ? "size-5 animate-spin" : "size-5"}
-                  />
+                  {loading ? (
+                    <HugeiconsIcon icon={Loading03Icon} strokeWidth={2} className="size-5 animate-spin" />
+                  ) : (
+                    <GenerateIcon className="size-5" />
+                  )}
                   {loading ? "Generating…" : `Generate ${count} sentence${count === 1 ? "" : "s"}`}
                 </Button>
               </div>
@@ -505,7 +505,7 @@ export function Generator({ initial = {} }: { initial?: InitialSettings }) {
       </div>
 
       {split && (
-        <div ref={results} className="min-w-0 flex-1 scroll-mt-20 lg:py-10">
+        <div ref={results} className="min-w-0 flex-1 scroll-mt-6 lg:py-10">
           <div
             // Remounting on a new run replays the entrance animation.
             key={runs.map((run) => run.id).join()}

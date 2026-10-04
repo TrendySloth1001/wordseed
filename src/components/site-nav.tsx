@@ -1,44 +1,51 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { toast } from "sonner";
-import { OfflineStatus, useChoice } from "@/components/offline";
+import { useChoice } from "@/components/offline";
 import { SettingsDialog, THEMES } from "@/components/settings";
 import { offlineSupported, saveForOffline, type SaveProgress } from "@/lib/offline/client";
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  BookOpen01Icon,
-  Clock01Icon,
-  CloudDownloadIcon,
-  CloudSavingDone01Icon,
-  Database01Icon,
-  QuillWrite01Icon,
-  Settings01Icon,
-  SparklesIcon,
-} from "@hugeicons/core-free-icons";
+import { CloudDownloadIcon, CloudSavingDone01Icon, Settings01Icon } from "@hugeicons/core-free-icons";
+import { CorpusIcon, DocsIcon, GenerateIcon, HistoryIcon, QuillIcon } from "@/components/animated-icons";
 
+// Icons whose parts animate on hover and when their page becomes current:
+// sparkles pop, clock hands sweep, a book drops onto the stack, a page turns.
 const LINKS = [
-  { href: "/", label: "Generate", icon: SparklesIcon },
-  { href: "/runs", label: "History", icon: Clock01Icon },
-  { href: "/corpus", label: "Corpus", icon: Database01Icon },
-  { href: "/docs", label: "Docs", icon: BookOpen01Icon },
+  { href: "/", label: "Generate", Icon: GenerateIcon },
+  { href: "/runs", label: "History", Icon: HistoryIcon },
+  { href: "/corpus", label: "Corpus", Icon: CorpusIcon },
+  { href: "/docs", label: "Docs", Icon: DocsIcon },
 ];
 
-/** The top bar: the app's name, which links home, and an Offline pill when there is no network. */
-export function SiteHeader() {
+/** Sent when the Settings slide-out opens (its box) or closes (null). */
+export const FLYOUT_EVENT = "wordseed-settings-flyout";
+export type FlyoutBox = { left: number; top: number; bottom: number };
+
+/** Buttons arrive one after another when the page first loads. */
+const enter = (index: number) => ({
+  className: "animate-[nav-in_0.5s_cubic-bezier(0.22,1,0.36,1)_both]",
+  style: { animationDelay: `${120 + index * 60}ms` },
+});
+/** The current page's button pops in when it becomes current. */
+const POP = "animate-[nav-pop_0.35s_ease-out]";
+
+/** The project's icon and name, floating in the top-left corner; links home. */
+export function SiteBrand() {
   return (
-    <header className="sticky top-0 z-20 border-b print:static bg-background/85 backdrop-blur-md">
-      <div className="mx-auto flex h-14 w-full max-w-[90rem] items-center px-4">
-        <Link href="/" className="flex min-w-0 items-center gap-2 font-semibold">
-          <HugeiconsIcon icon={QuillWrite01Icon} strokeWidth={2} className="size-6 shrink-0" />
-          <span className="truncate">Word to sentences</span>
-        </Link>
-        <OfflineStatus />
-      </div>
-    </header>
+    <Link
+      href="/"
+      aria-label="wordseed, home"
+      className="group inline-flex items-center gap-2 rounded-full border bg-background/85 py-1.5 pr-4 pl-1.5 shadow-lg shadow-black/10 backdrop-blur-md transition-transform duration-200 outline-none animate-[nav-in_0.45s_cubic-bezier(0.22,1,0.36,1)_both] hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-ring dark:shadow-black/40"
+    >
+      <span className="flex size-8 items-center justify-center rounded-full bg-foreground text-background">
+        <QuillIcon className="size-[18px]" />
+      </span>
+      <span className="font-semibold tracking-tight">wordseed</span>
+    </Link>
   );
 }
 
@@ -59,44 +66,58 @@ export function SiteNav() {
     <>
       <nav
         aria-label="Main"
-        className={`fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 grid grid-cols-5 gap-1 rounded-2xl p-1.5 md:hidden print:hidden ${surface}`}
+        className={`fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 grid grid-cols-5 gap-1 rounded-2xl p-1.5 animate-[nav-in_0.45s_cubic-bezier(0.22,1,0.36,1)_both] md:hidden print:hidden ${surface}`}
       >
-        {LINKS.map((link) => (
+        {LINKS.map((link, index) => (
           <Link
             key={link.href}
             href={link.href}
             aria-current={active(link.href) ? "page" : undefined}
-            className={`flex flex-col items-center justify-center gap-0.5 rounded-xl py-1.5 text-[0.7rem] font-medium transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-              active(link.href) ? "bg-foreground text-background" : "text-muted-foreground active:bg-muted"
+            className={`group flex justify-center rounded-xl py-1.5 text-[0.7rem] font-medium transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+              active(link.href) ? `bg-foreground text-background ${POP}` : "text-muted-foreground active:bg-muted"
             }`}
           >
-            <HugeiconsIcon icon={link.icon} strokeWidth={2} className="size-5" />
-            {link.label}
+            <span className={`flex flex-col items-center gap-0.5 ${enter(index).className}`} style={enter(index).style}>
+              <link.Icon className="size-5" />
+              {link.label}
+            </span>
           </Link>
         ))}
         <button
           type="button"
           onClick={() => setSettings(true)}
           aria-haspopup="dialog"
-          className={`flex flex-col items-center justify-center gap-0.5 rounded-xl py-1.5 text-[0.7rem] font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-            settings ? "bg-foreground text-background" : "text-muted-foreground active:bg-muted"
+          className={`group flex justify-center rounded-xl py-1.5 text-[0.7rem] font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+            settings ? `bg-foreground text-background ${POP}` : "text-muted-foreground active:bg-muted"
           }`}
         >
-          <HugeiconsIcon icon={Settings01Icon} strokeWidth={2} className="size-5" />
-          Settings
+          <span className={`flex flex-col items-center gap-0.5 ${enter(LINKS.length).className}`} style={enter(LINKS.length).style}>
+            <HugeiconsIcon
+              icon={Settings01Icon}
+              strokeWidth={2}
+              className="size-5 transition-transform duration-500 group-active:rotate-90"
+            />
+            Settings
+          </span>
         </button>
       </nav>
 
       <nav
         aria-label="Main"
-        className={`fixed right-5 bottom-5 z-30 hidden flex-col items-center gap-1 rounded-full p-1.5 md:flex print:hidden ${surface}`}
+        className={`fixed right-5 bottom-5 z-30 hidden flex-col items-center gap-1 rounded-full p-1.5 animate-[nav-in_0.45s_cubic-bezier(0.22,1,0.36,1)_both] md:flex print:hidden ${surface}`}
       >
-        {LINKS.map((link) => (
+        {LINKS.map((link, index) => (
           <FloatingButton key={link.href} label={link.label} active={active(link.href)} href={link.href}>
-            <HugeiconsIcon icon={link.icon} strokeWidth={2} className="size-5" />
+            <span className={enter(index).className} style={enter(index).style}>
+              <link.Icon className="size-5" />
+            </span>
           </FloatingButton>
         ))}
-        <span className="my-0.5 h-px w-6 bg-border" aria-hidden />
+        <span
+          className={`my-0.5 h-px w-6 bg-border ${enter(LINKS.length).className}`}
+          style={enter(LINKS.length).style}
+          aria-hidden
+        />
         <SettingsLauncher active={settings} onOpen={() => setSettings(true)} />
       </nav>
 
@@ -127,6 +148,17 @@ function SettingsLauncher({ active, onOpen }: { active: boolean; onOpen: () => v
   const supported = choice !== "unknown" && offlineSupported();
   const saved = choice === "granted";
   const share = progress ? Math.round((progress.done / Math.max(1, progress.total)) * 100) : 0;
+  const panel = useRef<HTMLDivElement>(null);
+
+  /** Tells the page where the slide-out is, so the footer's buttons can move aside. */
+  function announce(open: boolean) {
+    const box = panel.current?.getBoundingClientRect();
+    window.dispatchEvent(
+      new CustomEvent<FlyoutBox | null>(FLYOUT_EVENT, {
+        detail: open && box ? { left: box.left, top: box.top, bottom: box.bottom } : null,
+      }),
+    );
+  }
 
   async function saveOffline() {
     // Already saved: Settings shows what is saved and can update or remove it.
@@ -150,25 +182,36 @@ function SettingsLauncher({ active, onOpen }: { active: boolean; onOpen: () => v
     "pointer-events-none translate-x-2 opacity-0 group-has-focus-visible/settings:pointer-events-auto group-has-focus-visible/settings:translate-x-0 group-has-focus-visible/settings:opacity-100 group-hover/settings:pointer-events-auto group-hover/settings:translate-x-0 group-hover/settings:opacity-100";
 
   return (
-    <div className="group/settings relative">
+    <div
+      className="group/settings relative"
+      onMouseEnter={() => announce(true)}
+      onMouseLeave={() => announce(false)}
+      onFocus={(event) => event.target.matches(":focus-visible") && announce(true)}
+      onBlur={(event) => !event.currentTarget.contains(event.relatedTarget) && announce(false)}
+    >
       <button
         type="button"
         aria-label="Settings"
         aria-haspopup="dialog"
         onClick={onOpen}
-        className={`${FLOATING} ${active ? FLOATING_ACTIVE : FLOATING_IDLE} group-hover/settings:bg-muted group-hover/settings:text-foreground`}
+        className={`${FLOATING} ${active ? `${FLOATING_ACTIVE} ${POP}` : FLOATING_IDLE} group-hover/settings:bg-muted group-hover/settings:text-foreground`}
       >
-        <HugeiconsIcon
-          icon={Settings01Icon}
-          strokeWidth={2}
-          className="size-5 transition-transform duration-500 group-hover/settings:rotate-90"
-        />
+        <span className={enter(LINKS.length + 1).className} style={enter(LINKS.length + 1).style}>
+          <HugeiconsIcon
+            icon={Settings01Icon}
+            strokeWidth={2}
+            className="size-5 transition-transform duration-500 group-hover/settings:rotate-90"
+          />
+        </span>
       </button>
 
       {/* The padding on the right bridges the gap, so the pointer can travel
           from the button into the panel without it closing. */}
       <div className={`absolute top-1/2 right-full -translate-y-1/2 pr-3 transition-all duration-200 ${reveal}`}>
-        <div className="flex items-center gap-1.5 rounded-full border bg-background/95 p-1.5 shadow-lg shadow-black/10 backdrop-blur-md dark:shadow-black/40">
+        <div
+          ref={panel}
+          className="flex items-center gap-1.5 rounded-full border bg-background/95 p-1.5 shadow-lg shadow-black/10 backdrop-blur-md dark:shadow-black/40"
+        >
           <div role="radiogroup" aria-label="Theme" className="flex gap-0.5 rounded-full bg-muted p-0.5">
             {THEMES.map((option) => {
               const selected = mounted && theme === option.value;
@@ -239,7 +282,7 @@ function FloatingButton({
   onClick?: () => void;
   children: React.ReactNode;
 }) {
-  const className = `${FLOATING} ${active ? FLOATING_ACTIVE : FLOATING_IDLE}`;
+  const className = `${FLOATING} ${active ? `${FLOATING_ACTIVE} ${POP}` : FLOATING_IDLE}`;
   const tooltip = (
     <span className="pointer-events-none absolute right-full mr-3 translate-x-1 rounded-md bg-foreground px-2.5 py-1 text-xs font-medium whitespace-nowrap text-background opacity-0 shadow-md transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100">
       {label}

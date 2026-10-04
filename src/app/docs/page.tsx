@@ -10,7 +10,7 @@ import rnnUnfolded from "./images/rnn-unfolded.png";
 import { Code, InCode, Section, Sub, Tex, WebFigure } from "./parts";
 
 export const metadata: Metadata = {
-  title: "How it works · Word to sentences",
+  title: "How it works",
   description: "The mathematics and the code behind the sentence generator.",
 };
 

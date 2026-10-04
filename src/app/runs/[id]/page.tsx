@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { RunView } from "@/components/run-view";
 import { getRun } from "@/lib/runs";
 
-export const metadata: Metadata = { title: "Saved run · Word to sentences" };
+export const metadata: Metadata = { title: "Saved run" };
 
 export default async function RunPage(props: PageProps<"/runs/[id]">) {
   const { id } = await props.params;

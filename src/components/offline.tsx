@@ -52,7 +52,7 @@ export function megabytes(bytes: number): string {
   return `${Math.max(1, Math.round(bytes / 1024 / 1024))} MB`;
 }
 
-/** A pill in the top bar while there is no network. */
+/** A floating pill at the top of the screen while there is no network. */
 export function OfflineStatus() {
   const online = useOnline();
   const choice = useChoice();
@@ -60,7 +60,7 @@ export function OfflineStatus() {
   return (
     <span
       role="status"
-      className="ml-auto flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium animate-in fade-in"
+      className="fixed top-3 left-1/2 z-40 flex -translate-x-1/2 items-center gap-1.5 rounded-full border bg-background/85 px-3 py-1.5 text-xs font-medium whitespace-nowrap shadow-lg shadow-black/10 backdrop-blur-md animate-in fade-in slide-in-from-top-2 dark:shadow-black/40 print:hidden"
       title={choice === "granted" ? "Pages and models are served from this device." : undefined}
     >
       <HugeiconsIcon icon={WifiDisconnected01Icon} strokeWidth={2} className="size-3.5" />

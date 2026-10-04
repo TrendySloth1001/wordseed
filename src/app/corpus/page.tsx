@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { CorpusManager } from "./corpus-manager";
 
-export const metadata: Metadata = { title: "Corpus · Word to sentences" };
+export const metadata: Metadata = { title: "Corpus" };
 
 export default function CorpusPage() {
   return (

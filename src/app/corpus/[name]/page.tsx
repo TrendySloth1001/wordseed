@@ -15,7 +15,7 @@ import {
 } from "@/lib/source-reader";
 import { ScrollToMatch } from "./scroll-to-match";
 
-export const metadata: Metadata = { title: "Source · Word to sentences" };
+export const metadata: Metadata = { title: "Source" };
 
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
 
