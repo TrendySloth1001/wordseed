@@ -39,7 +39,34 @@ export function declineOffline() {
  * both models. Resolves when everything is saved; `force` re-saves even when
  * nothing has changed since the last time.
  */
+/** Sent on window while a save the visitor asked for runs, so the page can show it anywhere. */
+export const SAVE_EVENT = "wordseed-save";
+export type SaveEvent =
+  | ({ state: "progress" } & SaveProgress)
+  | { state: "done" }
+  | { state: "error"; message: string };
+
+function announceSave(detail: SaveEvent) {
+  window.dispatchEvent(new CustomEvent<SaveEvent>(SAVE_EVENT, { detail }));
+}
+
 export async function saveForOffline(onProgress?: (progress: SaveProgress) => void, force = false): Promise<void> {
+  // A forced save is one the visitor asked for; the quiet refresh on each visit is not announced.
+  if (!force) return save(onProgress, false);
+  announceSave({ state: "progress", done: 0, total: 1 });
+  try {
+    await save((progress) => {
+      onProgress?.(progress);
+      announceSave({ state: "progress", ...progress });
+    }, true);
+    announceSave({ state: "done" });
+  } catch (error) {
+    announceSave({ state: "error", message: error instanceof Error ? error.message : String(error) });
+    throw error;
+  }
+}
+
+async function save(onProgress: ((progress: SaveProgress) => void) | undefined, force: boolean): Promise<void> {
   if (!offlineSupported()) throw new Error("This browser cannot save sites for offline use.");
   setChoice("granted");
   await navigator.serviceWorker.register("/sw.js", { scope: "/" });

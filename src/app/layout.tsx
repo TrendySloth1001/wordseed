@@ -6,6 +6,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { OfflineConsent, OfflineStatus } from "@/components/offline";
 import { Toaster } from "@/components/ui/sonner";
 import { StorageNotice } from "@/components/consent";
+import { OfflineProgress } from "@/components/offline-progress";
 import { AUTHOR, SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -70,6 +71,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <SiteNav />
           <StorageNotice />
           <OfflineConsent />
+          <OfflineProgress />
           <Toaster position="bottom-center" mobileOffset={{ bottom: 96 }} />
         </Providers>
       </body>
