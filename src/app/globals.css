@@ -227,10 +227,6 @@
   opacity: 0;
   transform-origin: 12px 4px;
 }
-.ai .ai-page {
-  opacity: 0;
-  transform-origin: 12px 12px;
-}
 .ai .ai-cat,
 .ai .ai-tail {
   stroke-dasharray: 1;
@@ -276,12 +272,6 @@
 }
 :is(.group:hover, .group:focus-visible, [aria-current="page"]) .ai-corpus .ai-book-1 {
   animation-delay: 0.06s;
-}
-:is(.group:hover, .group:focus-visible, [aria-current="page"]) .ai-docs .ai-page {
-  animation: ai-page-turn 0.65s ease-in-out both;
-}
-:is(.group:hover, .group:focus-visible, [aria-current="page"]) .ai-docs .ai-page-2 {
-  animation-delay: 0.22s;
 }
 :is(.group:hover, .group:focus-visible) .ai-github .ai-cat {
   animation: ai-draw 0.9s ease-in-out;
@@ -373,25 +363,6 @@
   }
   70% {
     transform: translateY(0.8px);
-  }
-}
-@keyframes ai-page-turn {
-  0% {
-    opacity: 0;
-    transform: scaleX(1);
-  }
-  12% {
-    opacity: 1;
-  }
-  50% {
-    transform: scaleX(0) translateY(-1px);
-  }
-  88% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: scaleX(-1);
   }
 }
 @keyframes ai-draw {

@@ -10,16 +10,15 @@ import { SettingsDialog, THEMES } from "@/components/settings";
 import { offlineSupported, saveForOffline, type SaveProgress } from "@/lib/offline/client";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Settings01Icon } from "@hugeicons/core-free-icons";
-import { CorpusIcon, DocsIcon, GenerateIcon, HistoryIcon, QuillIcon } from "@/components/animated-icons";
+import { CorpusIcon, GenerateIcon, HistoryIcon, QuillIcon } from "@/components/animated-icons";
 import { CloudIcon } from "@/components/animated-icons";
 
 // Icons whose parts animate on hover and when their page becomes current:
-// sparkles pop, clock hands sweep, a book drops onto the stack, a page turns.
+// sparkles pop, clock hands sweep, a book drops onto the stack.
 const LINKS = [
   { href: "/", label: "Generate", Icon: GenerateIcon },
   { href: "/runs", label: "History", Icon: HistoryIcon },
   { href: "/corpus", label: "Corpus", Icon: CorpusIcon },
-  { href: "/docs", label: "Docs", Icon: DocsIcon },
 ];
 
 /** Sent when the Settings slide-out opens (its box) or closes (null). */

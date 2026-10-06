@@ -9,10 +9,13 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/*": ["./data/corpus/*.txt", "./data/neural/model.*", "./data/offline-manifest.json"],
     "/corpus/*": ["./data/corpus/*.txt"],
-    "/docs": ["./data/corpus/*.txt", "./data/neural/model.*"],
   },
   // The service worker must never be served from the HTTP cache, or browsers
   // would keep running an old version of it.
+  // The docs page was removed; old links land on the generator instead of a 404.
+  async redirects() {
+    return [{ source: "/docs", destination: "/", permanent: false }];
+  },
   async headers() {
     return [
       {

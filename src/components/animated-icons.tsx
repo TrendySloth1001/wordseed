@@ -75,21 +75,6 @@ export function CorpusIcon(props: IconProps) {
   );
 }
 
-/** Docs: an open book whose right-hand page turns over the spine. */
-export function DocsIcon(props: IconProps) {
-  const right =
-    "M16.0001 3.5H17.3997C19.5681 3.5 20.6523 3.5 21.3259 4.17362C21.9996 4.84724 21.9996 5.93144 21.9997 8.09982L21.9999 13.3998C22 15.5684 22 16.6526 21.3264 17.3263C20.6527 18 19.5684 18 17.3999 18H15.0495C13.567 18 12.2907 19.0464 12 20.5V5.5C12.9443 4.24097 14 3.5 16.0001 3.5Z";
-  return (
-    <Svg name="docs" {...props}>
-      <path d="M7.99978 3.5H6.60021C4.43183 3.5 3.34764 3.5 2.67399 4.17362C2.00034 4.84724 2.00029 5.93144 2.00021 8.09982L2 13.3998C1.99992 15.5684 1.99987 16.6526 2.67353 17.3263C3.34719 18 4.43146 18 6.6 18H8.95042C10.4329 18 11.7092 19.0464 11.9999 20.5V5.5C11.0556 4.24097 9.99989 3.5 7.99978 3.5Z" />
-      <path d={right} />
-      {/* Two loose pages that turn one after the other. */}
-      <path className="ai-part ai-page" d={right} />
-      <path className="ai-part ai-page ai-page-2" d={right} />
-    </Svg>
-  );
-}
-
 /** GitHub: the mark draws itself again, and the cat's tail gives a flick. */
 export function GithubMark(props: IconProps) {
   return (

@@ -7,7 +7,6 @@
 ![Node.js](https://img.shields.io/badge/Node.js-000?style=for-the-badge&logo=nodedotjs&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-000?style=for-the-badge&logo=python&logoColor=white)
 ![PyTorch](https://img.shields.io/badge/PyTorch-000?style=for-the-badge&logo=pytorch&logoColor=white)
-![KaTeX](https://img.shields.io/badge/KaTeX-000?style=for-the-badge&logo=latex&logoColor=white)
 
 # wordseed
 
@@ -28,8 +27,7 @@ Type a word, get as many sentences as you want. Two language models built from s
     <td><img src="docs/screenshots/results-dark.png" alt="Dark mode" /></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/docs.png" alt="How it works: the maths behind each step" /></td>
-    <td><img src="docs/screenshots/corpus.png" alt="Corpus statistics and upload" /></td>
+    <td colspan="2"><img src="docs/screenshots/corpus.png" alt="Corpus statistics and upload" /></td>
   </tr>
 </table>
 
@@ -37,6 +35,5 @@ Type a word, get as many sentences as you want. Two language models built from s
   <tr>
     <td><img src="docs/screenshots/mobile-home.png" alt="Mobile: home" /></td>
     <td><img src="docs/screenshots/mobile-results.png" alt="Mobile: results" /></td>
-    <td><img src="docs/screenshots/mobile-docs-dark.png" alt="Mobile: docs in dark mode" /></td>
   </tr>
 </table>

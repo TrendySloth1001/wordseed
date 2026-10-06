@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ArrowRight01Icon,
-  BookOpen01Icon,
   Clock01Icon,
   Database01Icon,
   File01Icon,
@@ -18,7 +17,6 @@ import { sourceTitle } from "@/lib/source-reader";
 
 const MAIN = [
   { path: "/", label: "Generate", hint: "Works fully offline: sentences are written on this device", icon: SparklesIcon },
-  { path: "/docs", label: "Docs", hint: "How every step works, with the maths", icon: BookOpen01Icon },
   { path: "/corpus", label: "Corpus", hint: "The texts the models learned from", icon: Database01Icon },
   { path: "/runs", label: "History", hint: "As it was when last saved", icon: Clock01Icon },
 ];
