@@ -231,8 +231,7 @@ export function SiteFooter() {
         <a href={`https://github.com/${REPO}`} aria-label="Source code on GitHub" title="Source code on GitHub" className={`${bubble} w-[50px]`}>
           <GithubMark className="size-5" />
         </a>
-        <a
-          href={`https://github.com/${REPO}/stargazers`}
+        <span
           aria-label={stars ? `Star on GitHub, ${stars} stars so far` : "Star on GitHub"}
           title="Star on GitHub"
           className={`${bubble} px-4`}
@@ -240,9 +239,9 @@ export function SiteFooter() {
           <StarBurstIcon className="size-5" />
           Star
           {stars !== null && stars > 0 && (
-            <span className="border-l pl-1.5 tabular-nums group-hover:border-background/30">{stars.toLocaleString("en")}</span>
+            <span className="border-l pl-1.5 tabular-nums">{stars.toLocaleString("en")}</span>
           )}
-        </a>
+        </span>
       </div>
     </footer>
   );
