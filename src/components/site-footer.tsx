@@ -12,6 +12,7 @@ const AUTHOR = "Nikhil Kumawat";
 const LOGIN = "TrendySloth1001";
 const PROFILE = `https://github.com/${LOGIN}`;
 const REPO = `${LOGIN}/wordseed`;
+const HUB_URL = `https://hub.xerj.org/contributors/${LOGIN}`;
 
 type Repo = { stargazers_count: number };
 type User = {
@@ -170,6 +171,47 @@ function Author() {
 }
 
 /**
+ * The XERJ Corpus Hub badge; hovering or focusing it shows a preview of the
+ * hub page above. Both images are served from this site, so nothing is
+ * requested from the hub until the visitor follows the link.
+ */
+function HubBadge() {
+  return (
+    <span className="group/hub inline-block align-middle sm:relative">
+      <a
+        href={HUB_URL}
+        aria-label="Featured in the XERJ Corpus Hub"
+        className="inline-flex items-center gap-1.5 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/xerj-logo.png" alt="" width={20} height={20} className="size-5 rounded" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/xerj-hub-badge.svg" alt="XERJ Corpus Hub: contributor" width={199} height={20} className="h-5 w-auto" />
+      </a>
+      {/* The bottom padding bridges the gap, so the pointer can move up into the card. */}
+      <span className="pointer-events-none absolute bottom-full left-1/2 z-40 w-80 -translate-x-1/2 translate-y-1 pb-3 opacity-0 transition-all duration-200 group-hover/hub:pointer-events-auto group-hover/hub:translate-y-0 group-hover/hub:opacity-100 group-has-focus-visible/hub:pointer-events-auto group-has-focus-visible/hub:translate-y-0 group-has-focus-visible/hub:opacity-100">
+        <a
+          href={HUB_URL}
+          tabIndex={-1}
+          className="flex flex-col gap-2 rounded-2xl border bg-background/95 p-3 text-left shadow-xl shadow-black/15 backdrop-blur-md dark:shadow-black/50"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/xerj-hub-preview.png" alt="" width={1200} height={750} className="w-full rounded-lg border" />
+          <span className="flex items-center justify-between gap-2 px-1 text-xs text-muted-foreground">
+            <span className="flex items-center gap-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/xerj-logo.png" alt="" width={20} height={20} className="size-5 rounded" />
+              Featured in the XERJ Corpus Hub
+            </span>
+            <HugeiconsIcon icon={ArrowUpRight01Icon} strokeWidth={2} className="size-4 shrink-0" />
+          </span>
+        </a>
+      </span>
+    </span>
+  );
+}
+
+/**
  * True when the page is taller than the window on a larger screen. The GitHub
  * buttons then float in the top-right corner, opposite the wordseed pill,
  * instead of waiting at the bottom of the page.
@@ -209,6 +251,10 @@ export function SiteFooter() {
       <p className="text-sm text-muted-foreground">
         Built from scratch by <Author />
         <span className="hidden lg:inline"> · open source under the MIT licence</span>
+        <span className="hidden md:inline">
+          {" · "}
+          <HubBadge />
+        </span>
         {" · "}
         <Link href="/terms" className="underline-offset-4 hover:text-foreground hover:underline">
           Terms
